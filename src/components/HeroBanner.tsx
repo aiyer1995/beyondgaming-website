@@ -61,10 +61,10 @@ export default function HeroBanner() {
               <div className="absolute inset-0 rounded-2xl animate-shimmer pointer-events-none" />
             </Link>
             <Link
-              href="/category/pokemon-tcg-products"
+              href="/grading"
               className="inline-flex items-center gap-2 glass-dark text-white font-semibold px-8 py-4 rounded-2xl hover:bg-white/15 transition-all duration-300"
             >
-              Browse Pokemon
+              Grading Services
             </Link>
           </div>
 
