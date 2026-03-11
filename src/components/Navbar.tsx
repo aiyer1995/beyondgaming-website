@@ -10,7 +10,6 @@ import { useAuthStore } from "@/store/auth";
 const NAV_LINKS = [
   { href: "/category/pokemon-tcg-products", label: "Pokemon" },
   { href: "/category/one-piece-tcg", label: "One Piece" },
-  { href: "/category/bandai-tcg", label: "Other TCG / Merch" },
   { href: "/category/supplies", label: "Supplies" },
   { href: "/grading", label: "Grading" },
   { href: "/contact", label: "Contact Us" },
