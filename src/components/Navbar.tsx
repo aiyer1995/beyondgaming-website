@@ -3,11 +3,12 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useCartStore } from "@/store/cart";
 import { useAuthStore } from "@/store/auth";
 
 const NAV_LINKS = [
+  { href: "/", label: "Home" },
   { href: "/category/pokemon-tcg-products", label: "Pokemon" },
   { href: "/category/one-piece-tcg", label: "One Piece" },
   { href: "/category/supplies", label: "Supplies" },
@@ -21,6 +22,7 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const { getItemCount, openDrawer } = useCartStore();
   const user = useAuthStore((s) => s.user);
   const [mounted, setMounted] = useState(false);
@@ -124,17 +126,20 @@ export default function Navbar() {
       <nav className={`hidden md:block transition-all duration-300 ${scrolled ? "glass" : "bg-white/95 backdrop-blur-sm border-b border-purple-100/50"}`}>
         <div className="max-w-7xl mx-auto px-4">
           <ul className="flex items-center gap-0.5">
-            {NAV_LINKS.map((link) => (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  className="relative block px-5 py-3 text-sm font-semibold text-gray-600 hover:text-purple-700 transition-colors group"
-                >
-                  {link.label}
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-purple-600 to-purple-400 rounded-full group-hover:w-4/5 transition-all duration-300" />
-                </Link>
-              </li>
-            ))}
+            {NAV_LINKS.map((link) => {
+              const isActive = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
+              return (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className={`relative block px-5 py-3 text-sm font-semibold transition-colors group ${isActive ? "text-purple-700" : "text-gray-600 hover:text-purple-700"}`}
+                  >
+                    {link.label}
+                    <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 bg-gradient-to-r from-purple-600 to-purple-400 rounded-full transition-all duration-300 ${isActive ? "w-4/5" : "w-0 group-hover:w-4/5"}`} />
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </nav>
@@ -152,17 +157,20 @@ export default function Navbar() {
             />
           </form>
           <ul className="pb-4 stagger-children">
-            {NAV_LINKS.map((link) => (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-6 py-3.5 text-sm font-semibold text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors"
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
+            {NAV_LINKS.map((link) => {
+              const isActive = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
+              return (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`block px-6 py-3.5 text-sm font-semibold transition-colors ${isActive ? "bg-purple-50 text-purple-700" : "text-gray-700 hover:bg-purple-50 hover:text-purple-700"}`}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
