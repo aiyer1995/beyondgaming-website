@@ -23,7 +23,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   const order = params.order || "desc";
 
   const categories = await getCategories();
-  const topCategories = categories.filter((c) => c.parent === 0 && c.count > 0 && c.slug !== "uncategorized" && c.slug !== "grading");
+  const topCategories = categories.filter((c) => c.parent === 0 && c.count > 0 && c.slug !== "uncategorized" && c.slug !== "grading" && c.slug !== "tcg-products");
 
   // If a category is selected, also fetch from its subcategories
   let allProducts: Awaited<ReturnType<typeof getProducts>>;
