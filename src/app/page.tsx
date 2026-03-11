@@ -121,7 +121,7 @@ export default async function HomePage() {
                     </svg>
                   ),
                   title: "Secure Payments",
-                  desc: "Pay confidently with Razorpay, PhonePe, UPI, cards, or net banking.",
+                  desc: "Pay confidently with Razorpay via UPI, cards, or net banking.",
                 },
               ].map((item) => (
                 <div
