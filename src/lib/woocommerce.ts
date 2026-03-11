@@ -12,7 +12,6 @@ async function wcFetch<T>(endpoint: string, params: FetchParams = {}, method = "
   const url = new URL(`${BASE_URL}/wp-json/wc/v3/${endpoint}`);
   url.searchParams.set("consumer_key", CONSUMER_KEY);
   url.searchParams.set("consumer_secret", CONSUMER_SECRET);
-  url.searchParams.set("_", Date.now().toString());
 
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined) {
@@ -22,9 +21,9 @@ async function wcFetch<T>(endpoint: string, params: FetchParams = {}, method = "
 
   const options: RequestInit = {
     method,
-    cache: "no-store",
+    next: { revalidate: 60 },
     headers: { "Content-Type": "application/json" },
-  };
+  } as RequestInit;
 
   if (body) {
     options.body = JSON.stringify(body);

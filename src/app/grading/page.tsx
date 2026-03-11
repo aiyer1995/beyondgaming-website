@@ -7,7 +7,7 @@ import GradingFAQ from "./GradingFAQ";
 import ShippingInfoPopup from "./ShippingInfoPopup";
 import GradingFormPopup from "./GradingFormPopup";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const LOT_STYLES = [
   { label: "Currently Active Lot", key: "active_lot", color: "bg-green-50 border-green-200 text-green-800", dot: "bg-green-500 animate-pulse" },

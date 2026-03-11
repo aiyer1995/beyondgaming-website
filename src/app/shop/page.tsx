@@ -2,7 +2,7 @@ import { getProducts, getCategories, getSubcategoryIds } from "@/lib/woocommerce
 import ProductGrid from "@/components/ProductGrid";
 import Link from "next/link";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 interface ShopPageProps {
   searchParams: Promise<{

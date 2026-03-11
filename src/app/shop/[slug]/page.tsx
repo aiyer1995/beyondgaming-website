@@ -6,7 +6,7 @@ import ProductImageGallery from "@/components/ProductImageGallery";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
