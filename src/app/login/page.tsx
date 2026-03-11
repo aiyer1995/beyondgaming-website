@@ -12,7 +12,7 @@ function LoginForm() {
   const login = useAuthStore((s) => s.login);
   const user = useAuthStore((s) => s.user);
 
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,7 +28,7 @@ function LoginForm() {
     setError("");
     setLoading(true);
 
-    const result = await login(email, password);
+    const result = await login(identifier, password);
     setLoading(false);
 
     if (result.error) {
@@ -55,17 +55,17 @@ function LoginForm() {
 
           <div className="space-y-5">
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
-                Email Address
+              <label htmlFor="identifier" className="block text-sm font-semibold text-gray-700 mb-2">
+                Email or Username
               </label>
               <input
-                id="email"
-                type="email"
+                id="identifier"
+                type="text"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-purple-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all text-gray-900"
-                placeholder="you@example.com"
+                placeholder="you@example.com or username"
               />
             </div>
 

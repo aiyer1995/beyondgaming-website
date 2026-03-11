@@ -7,12 +7,12 @@ export async function POST(request: NextRequest) {
     const { email, password } = await request.json();
 
     if (!email || !password) {
-      return NextResponse.json({ error: "Email and password required" }, { status: 400 });
+      return NextResponse.json({ error: "Email/username and password required" }, { status: 400 });
     }
 
     const result = await verifyCustomerLogin(email, password);
     if (!result) {
-      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
+      return NextResponse.json({ error: "Invalid email/username or password" }, { status: 401 });
     }
 
     await setSession(result.customer_id);

@@ -118,7 +118,16 @@ export async function getCustomerOrders(customerId: number): Promise<WCOrder[]> 
   return wcFetch<WCOrder[]>("orders", { customer: customerId, per_page: 20 });
 }
 
-export async function verifyCustomerLogin(email: string, password: string): Promise<{ customer_id: number; email: string; first_name: string; last_name: string } | null> {
+export async function verifyCustomerLogin(identifier: string, password: string): Promise<{ customer_id: number; email: string; first_name: string; last_name: string } | null> {
+  // If identifier is not an email, try to find customer by username first
+  let email = identifier;
+  if (!identifier.includes("@")) {
+    const customers = await wcFetch<WCCustomer[]>("customers", { search: identifier, per_page: 1 });
+    const match = customers.find((c) => c.username === identifier);
+    if (!match) return null;
+    email = match.email;
+  }
+
   const res = await fetch(`${BASE_URL}/wp-json/bg/v1/login`, {
     method: "POST",
     cache: "no-store",
