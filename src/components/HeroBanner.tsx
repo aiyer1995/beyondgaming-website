@@ -29,7 +29,7 @@ export default function HeroBanner() {
           <div className="inline-flex items-center gap-2 glass-dark rounded-full px-4 py-1.5 mb-6">
             <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
             <span className="text-xs font-medium text-purple-200 tracking-wide uppercase">
-              Shipping Nationwide &bull; 1-3 Day Delivery
+              Shipping Nationwide
             </span>
           </div>
 
