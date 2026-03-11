@@ -9,7 +9,7 @@ export default function ShippingInfoPopup() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1 text-xs font-bold text-gold-500 hover:text-gold-500/80 transition-colors"
+        className="inline-flex items-center gap-1 text-xs font-bold text-purple-700 hover:text-purple-900 transition-colors"
       >
         Where do I ship?
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
