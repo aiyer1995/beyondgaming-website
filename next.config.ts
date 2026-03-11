@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
         hostname: "beyondgaming.in",
         pathname: "/wp-content/uploads/**",
       },
+      {
+        protocol: "https",
+        hostname: "admin.beyondgaming.in",
+        pathname: "/wp-content/uploads/**",
+      },
     ],
   },
 };

@@ -49,7 +49,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/" className="shrink-0 group">
             <Image
-              src="https://beyondgaming.in/wp-content/uploads/2025/11/BG-New-2.png"
+              src="https://admin.beyondgaming.in/wp-content/uploads/2025/11/BG-New-2.png"
               alt="Beyond Gaming"
               width={160}
               height={44}

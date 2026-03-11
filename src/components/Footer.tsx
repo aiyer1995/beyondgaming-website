@@ -13,7 +13,7 @@ export default function Footer() {
           <div className="md:col-span-4">
             <div className="mb-5">
               <Image
-                src="https://beyondgaming.in/wp-content/uploads/2025/11/BG-New-2.png"
+                src="https://admin.beyondgaming.in/wp-content/uploads/2025/11/BG-New-2.png"
                 alt="Beyond Gaming"
                 width={180}
                 height={50}
