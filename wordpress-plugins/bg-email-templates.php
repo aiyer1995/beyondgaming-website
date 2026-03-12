@@ -84,9 +84,14 @@ function bg_custom_email_styles($css) {
     return $css;
 }
 
-// Replace the entire email header with custom branded one
-remove_action('woocommerce_email_header', array(WC()->mailer(), 'email_header'));
-add_action('woocommerce_email_header', 'bg_custom_email_header', 10, 2);
+// Replace the entire email header/footer with custom branded ones
+add_action('woocommerce_init', 'bg_override_email_templates');
+function bg_override_email_templates() {
+    remove_action('woocommerce_email_header', array(WC()->mailer(), 'email_header'));
+    remove_action('woocommerce_email_footer', array(WC()->mailer(), 'email_footer'));
+    add_action('woocommerce_email_header', 'bg_custom_email_header', 10, 2);
+    add_action('woocommerce_email_footer', 'bg_custom_email_footer');
+}
 function bg_custom_email_header($email_heading, $email = null) {
     $logo_url = home_url('/wp-content/uploads/2025/11/BG-New-2.png');
     ?>
@@ -102,37 +107,33 @@ function bg_custom_email_header($email_heading, $email = null) {
             <table border="0" cellpadding="0" cellspacing="0" height="100%" width="100%">
                 <tr>
                     <td align="center" valign="top">
-                        <table border="0" cellpadding="0" cellspacing="0" width="600" id="template_container" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 16px rgba(26,0,48,0.08);">
+                        <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; width: 100%; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 16px rgba(26,0,48,0.08);" id="template_container">
                             <!-- Logo -->
                             <tr>
                                 <td align="center" valign="top" style="background-color: #1a0030; padding: 28px 48px 12px 48px;">
                                     <img src="<?php echo esc_url($logo_url); ?>" alt="Beyond Gaming" style="max-width: 180px; height: auto; display: block; margin: 0 auto;" />
                                 </td>
                             </tr>
-                            <!-- Header -->
+                            <!-- Logo bottom border -->
                             <tr>
-                                <td align="center" valign="top" style="background-color: #1a0030; padding: 8px 48px 28px 48px; border-bottom: 3px solid #d4a843;">
-                                    <h1 style="color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 24px; font-weight: 800; line-height: 1.3; margin: 0; letter-spacing: 0.3px;">
-                                        <?php echo wp_kses_post($email_heading); ?>
-                                    </h1>
-                                </td>
+                                <td style="background-color: #1a0030; border-bottom: 3px solid #d4a843; font-size: 0; line-height: 0;" height="1">&nbsp;</td>
                             </tr>
                             <!-- Body -->
                             <tr>
                                 <td align="center" valign="top">
-                                    <table border="0" cellpadding="0" cellspacing="0" width="600" id="template_body">
+                                    <table border="0" cellpadding="0" cellspacing="0" width="100%" id="template_body">
                                         <tr>
                                             <td valign="top" id="body_content" style="background-color: #ffffff;">
                                                 <table border="0" cellpadding="20" cellspacing="0" width="100%">
                                                     <tr>
                                                         <td valign="top" style="padding: 36px 48px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.7; color: #374151;">
+                                                            <h1 style="color: #1a0030; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 24px; font-weight: 800; line-height: 1.3; margin: 0 0 24px 0;">
+                                                                <?php echo wp_kses_post($email_heading); ?>
+                                                            </h1>
                                                             <div id="body_content_inner">
     <?php
 }
 
-// Replace the entire email footer with custom branded one
-remove_action('woocommerce_email_footer', array(WC()->mailer(), 'email_footer'));
-add_action('woocommerce_email_footer', 'bg_custom_email_footer');
 function bg_custom_email_footer($email = null) {
     ?>
                                                             </div>
