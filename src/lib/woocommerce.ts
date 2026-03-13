@@ -50,21 +50,30 @@ export interface GetProductsParams {
 }
 
 export async function getProducts(params: GetProductsParams = {}): Promise<WCProduct[]> {
-  const products = await wcFetch<WCProduct[]>("products", {
-    page: params.page || 1,
-    per_page: params.per_page || 100,
-    search: params.search,
-    category: params.category,
-    orderby: params.orderby || "date",
-    order: params.order || "desc",
-    status: "publish",
-  });
-  const filtered = products.filter(
+  // Fetch all pages of products
+  const allProducts: WCProduct[] = [];
+  let page = 1;
+  const perPage = 100;
+
+  while (true) {
+    const batch = await wcFetch<WCProduct[]>("products", {
+      page,
+      per_page: perPage,
+      search: params.search,
+      category: params.category,
+      orderby: params.orderby || "date",
+      order: params.order || "desc",
+      status: "publish",
+    });
+    allProducts.push(...batch);
+    if (batch.length < perPage) break;
+    page++;
+  }
+
+  return allProducts.filter(
     (p) => p.stock_status === "instock" &&
       !p.categories.every((c) => c.slug === "uncategorized")
   );
-  const limit = params.per_page || 12;
-  return filtered.slice(0, limit);
 }
 
 export async function getProduct(slug: string): Promise<WCProduct | null> {
