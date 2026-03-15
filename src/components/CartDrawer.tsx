@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
+import { CartAddOn } from "@/types/woocommerce";
 
 export default function CartDrawer() {
   const { items, isDrawerOpen, closeDrawer, removeItem, updateQuantity, getTotal } =
@@ -98,10 +99,20 @@ export default function CartDrawer() {
                       {formatPrice(item.product.price)}
                     </p>
 
+                    {item.addOns && item.addOns.length > 0 && (
+                      <div className="mt-1 space-y-0.5">
+                        {item.addOns.map((addOn: CartAddOn) => (
+                          <p key={addOn.name} className="text-[11px] text-purple-600">
+                            + {addOn.name} ({formatPrice(addOn.price)})
+                          </p>
+                        ))}
+                      </div>
+                    )}
+
                     <div className="flex items-center justify-between mt-2.5">
                       <div className="flex items-center bg-white border border-purple-100 rounded-xl overflow-hidden">
                         <button
-                          onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                          onClick={() => updateQuantity(item.product.id, item.quantity - 1, item.addOns)}
                           className="px-2.5 py-1 text-gray-400 hover:text-purple-700 hover:bg-purple-50 transition-colors text-sm font-bold"
                         >
                           -
@@ -110,7 +121,7 @@ export default function CartDrawer() {
                           {item.quantity}
                         </span>
                         <button
-                          onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                          onClick={() => updateQuantity(item.product.id, item.quantity + 1, item.addOns)}
                           className="px-2.5 py-1 text-gray-400 hover:text-purple-700 hover:bg-purple-50 transition-colors text-sm font-bold"
                         >
                           +
@@ -118,7 +129,7 @@ export default function CartDrawer() {
                       </div>
 
                       <button
-                        onClick={() => removeItem(item.product.id)}
+                        onClick={() => removeItem(item.product.id, item.addOns)}
                         className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

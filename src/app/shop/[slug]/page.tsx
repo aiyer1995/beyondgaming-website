@@ -19,6 +19,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   const stock = getStockLabel(product.stock_status, product.stock_quantity);
   const related = await getRelatedProducts(product.related_ids);
+  const isGrading = product.categories.some((c) => c.slug === "grading");
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -102,7 +103,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
           {/* Add to Cart */}
           <div className="mt-8">
-            <AddToCartButton product={product} />
+            <AddToCartButton product={product} isGrading={isGrading} />
           </div>
 
           {/* Trust badges */}

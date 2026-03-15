@@ -107,6 +107,7 @@ export interface WCCreateOrder {
   billing: WCOrderBilling;
   shipping: WCOrderShipping;
   line_items: WCOrderLineItem[];
+  fee_lines?: WCFeeLine[];
 }
 
 export interface WCOrder {
@@ -151,7 +152,18 @@ export interface WCCreateCustomer {
   password: string;
 }
 
+export interface CartAddOn {
+  name: string;
+  price: number;
+}
+
 export interface CartItem {
   product: WCProduct;
   quantity: number;
+  addOns?: CartAddOn[];
+}
+
+export interface WCFeeLine {
+  name: string;
+  total: string;
 }

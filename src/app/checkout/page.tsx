@@ -143,6 +143,14 @@ export default function CheckoutPage() {
           product_id: item.product.id,
           quantity: item.quantity,
         })),
+        fee_lines: items
+          .filter((item) => item.addOns && item.addOns.length > 0)
+          .flatMap((item) =>
+            item.addOns!.map((addOn) => ({
+              name: `${addOn.name} (x${item.quantity})`,
+              total: (addOn.price * item.quantity).toFixed(2),
+            }))
+          ),
       };
 
       const res = await fetch("/api/checkout", {
@@ -486,8 +494,8 @@ export default function CheckoutPage() {
               <div className="bg-gray-50 rounded-2xl p-6 sticky top-28">
                 <h2 className="text-lg font-bold text-gray-900 mb-4">Order Summary</h2>
                 <ul className="space-y-3 mb-6 max-h-64 overflow-y-auto">
-                  {items.map((item) => (
-                    <li key={item.product.id} className="flex gap-3">
+                  {items.map((item, idx) => (
+                    <li key={`${item.product.id}-${idx}`} className="flex gap-3">
                       <div className="relative w-14 h-14 bg-white rounded-lg overflow-hidden shrink-0 border border-gray-200">
                         {item.product.images[0] ? (
                           <Image
@@ -504,9 +512,16 @@ export default function CheckoutPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-gray-900 line-clamp-1">{item.product.name}</p>
                         <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                        {item.addOns?.map((addOn) => (
+                          <p key={addOn.name} className="text-[11px] text-purple-600">
+                            + {addOn.name} ({formatPrice(addOn.price)}/ea)
+                          </p>
+                        ))}
                       </div>
                       <span className="text-sm font-medium shrink-0">
-                        {formatPrice(parseFloat(item.product.price) * item.quantity)}
+                        {formatPrice(
+                          (parseFloat(item.product.price) + (item.addOns || []).reduce((s, a) => s + a.price, 0)) * item.quantity
+                        )}
                       </span>
                     </li>
                   ))}

@@ -42,9 +42,9 @@ export default function CartPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Items */}
         <div className="lg:col-span-2 space-y-4">
-          {items.map((item) => (
+          {items.map((item, idx) => (
             <div
-              key={item.product.id}
+              key={`${item.product.id}-${idx}`}
               className="flex gap-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm"
             >
               <Link href={`/shop/${item.product.slug}`} className="shrink-0">
@@ -74,18 +74,27 @@ export default function CartPage() {
                 <p className="text-lg font-bold text-purple-700 mt-1">
                   {formatPrice(item.product.price)}
                 </p>
+                {item.addOns && item.addOns.length > 0 && (
+                  <div className="mt-1">
+                    {item.addOns.map((addOn) => (
+                      <p key={addOn.name} className="text-xs text-purple-600">
+                        + {addOn.name} ({formatPrice(addOn.price)})
+                      </p>
+                    ))}
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between mt-4">
                   <div className="flex items-center border border-gray-200 rounded-lg">
                     <button
-                      onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                      onClick={() => updateQuantity(item.product.id, item.quantity - 1, item.addOns)}
                       className="px-3 py-1.5 text-gray-500 hover:text-gray-700"
                     >
                       -
                     </button>
                     <span className="px-4 py-1.5 text-sm font-medium">{item.quantity}</span>
                     <button
-                      onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                      onClick={() => updateQuantity(item.product.id, item.quantity + 1, item.addOns)}
                       className="px-3 py-1.5 text-gray-500 hover:text-gray-700"
                     >
                       +
@@ -94,10 +103,12 @@ export default function CartPage() {
 
                   <div className="flex items-center gap-4">
                     <span className="font-semibold text-gray-900">
-                      {formatPrice(parseFloat(item.product.price) * item.quantity)}
+                      {formatPrice(
+                        (parseFloat(item.product.price) + (item.addOns || []).reduce((s, a) => s + a.price, 0)) * item.quantity
+                      )}
                     </span>
                     <button
-                      onClick={() => removeItem(item.product.id)}
+                      onClick={() => removeItem(item.product.id, item.addOns)}
                       className="text-red-400 hover:text-red-600 transition-colors"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

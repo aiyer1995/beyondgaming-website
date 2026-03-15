@@ -39,6 +39,11 @@ export async function POST(request: NextRequest) {
     const shippingCost = calculateShipping(totalWeight);
 
     // Add shipping line to WC order
+    const feeLines = (body.fee_lines || []).map((fee: { name: string; total: string }) => ({
+      name: fee.name,
+      total: fee.total,
+    }));
+
     const orderPayload = {
       ...body,
       shipping_lines: [
@@ -48,6 +53,7 @@ export async function POST(request: NextRequest) {
           total: shippingCost.toFixed(2),
         },
       ],
+      fee_lines: feeLines,
     };
 
     const order = await createOrder(orderPayload);
