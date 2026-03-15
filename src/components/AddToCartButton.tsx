@@ -10,6 +10,14 @@ const GRADING_ADD_ONS: CartAddOn[] = [
   { name: "Card Cleaning & Light Repair", price: 999 },
 ];
 
+const NO_CLEANING_SLUGS = [
+  "bgs-grading-express",
+  "bgs-grading-standard",
+  "psa-grading-value",
+  "psa-grading-value-plus",
+  "psa-grading-value-max",
+];
+
 interface AddToCartButtonProps {
   product: WCProduct;
   isGrading?: boolean;
@@ -23,6 +31,12 @@ export default function AddToCartButton({ product, isGrading }: AddToCartButtonP
   const isOutOfStock = product.stock_status === "outofstock";
   const maxQty = product.stock_quantity ?? 99;
 
+  const availableAddOns = isGrading
+    ? GRADING_ADD_ONS.filter(
+        (a) => !(a.name === "Card Cleaning & Light Repair" && NO_CLEANING_SLUGS.includes(product.slug))
+      )
+    : [];
+
   const toggleAddOn = (index: number) => {
     setSelectedAddOns((prev) => {
       const next = new Set(prev);
@@ -33,7 +47,7 @@ export default function AddToCartButton({ product, isGrading }: AddToCartButtonP
   };
 
   const getSelectedAddOns = (): CartAddOn[] => {
-    return GRADING_ADD_ONS.filter((_, i) => selectedAddOns.has(i));
+    return availableAddOns.filter((_, i) => selectedAddOns.has(i));
   };
 
   const addOnsTotal = getSelectedAddOns().reduce((sum, a) => sum + a.price, 0);
@@ -61,12 +75,12 @@ export default function AddToCartButton({ product, isGrading }: AddToCartButtonP
   return (
     <div className="space-y-4">
       {/* Grading Add-ons */}
-      {isGrading && (
+      {isGrading && availableAddOns.length > 0 && (
         <div className="bg-purple-50/70 rounded-2xl border border-purple-100 p-5 space-y-3">
           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
             Additional Services
           </h3>
-          {GRADING_ADD_ONS.map((addOn, index) => (
+          {availableAddOns.map((addOn, index) => (
             <label
               key={addOn.name}
               className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
