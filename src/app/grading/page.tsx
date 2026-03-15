@@ -92,7 +92,7 @@ export default async function GradingPage() {
           Beyond Grading
         </p>
         <h1 className="text-3xl md:text-4xl font-black text-gray-900">
-          Grading & <span className="text-gradient-gold">Authentication</span> Services
+          Grading & Authentication Services
         </h1>
       </div>
 
