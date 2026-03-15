@@ -12,6 +12,7 @@ const GRADING_CATEGORIES = [
   "PSA - VALUE MAX",
   "PSA - DUAL AUTO",
   "PSA - REHOLDER",
+  "CGC - ECONOMY",
 ];
 
 interface CardRow {
