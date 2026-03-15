@@ -90,7 +90,7 @@ export default function AddToCartButton({ product, isGrading }: AddToCartButtonP
                   <p className="text-xs text-gray-500 mt-1 leading-relaxed">
                     Only to be chosen to reduce light holo scratches and reduce creasing and bends.
                     Whitening and major damage cannot be repaired or restored through this service.
-                    Consult our team before choosing this option.
+                    <span className="text-red-600 font-bold">Consult our team before choosing this option.</span>
                   </p>
                 )}
               </div>
