@@ -108,6 +108,7 @@ export interface WCCreateOrder {
   shipping: WCOrderShipping;
   line_items: WCOrderLineItem[];
   fee_lines?: WCFeeLine[];
+  coupon_lines?: { code: string }[];
 }
 
 export interface WCOrder {

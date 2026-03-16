@@ -44,6 +44,10 @@ export async function POST(request: NextRequest) {
       total: fee.total,
     }));
 
+    const couponLines = (body.coupon_lines || []).map((c: { code: string }) => ({
+      code: c.code,
+    }));
+
     const orderPayload = {
       ...body,
       shipping_lines: [
@@ -54,6 +58,7 @@ export async function POST(request: NextRequest) {
         },
       ],
       fee_lines: feeLines,
+      ...(couponLines.length > 0 ? { coupon_lines: couponLines } : {}),
     };
 
     const order = await createOrder(orderPayload);
