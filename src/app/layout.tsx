@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
+import SalesPausedBanner from "@/components/SalesPausedBanner";
 import AuthProvider from "@/components/AuthProvider";
 
 const geistSans = Geist({
@@ -56,6 +57,7 @@ export default function RootLayout({
           <main className="flex-1">{children}</main>
           <Footer />
           <CartDrawer />
+          <SalesPausedBanner />
           {/* Floating WhatsApp Button */}
           <a
             href="https://api.whatsapp.com/message/T6PFEF2VAFMVP1?autoload=1&app_absent=0"
