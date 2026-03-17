@@ -1,7 +1,7 @@
 import HeroBanner from "@/components/HeroBanner";
 import CategoryCard from "@/components/CategoryCard";
 import ProductGrid from "@/components/ProductGrid";
-import { getProducts } from "@/lib/woocommerce";
+import { getProductsPage } from "@/lib/woocommerce";
 import Link from "next/link";
 
 export const revalidate = 60;
@@ -16,9 +16,7 @@ const FEATURED_CATEGORIES = [
 ];
 
 export default async function HomePage() {
-  // Fetch 100 to match Shop page, then take the first 15 after filtering
-  const allProducts = await getProducts({ per_page: 100, orderby: "date", order: "desc" });
-  const newArrivals = allProducts.slice(0, 15);
+  const { products: newArrivals } = await getProductsPage({ per_page: 15, orderby: "date", order: "desc" });
 
   return (
     <>

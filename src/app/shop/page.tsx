@@ -1,4 +1,4 @@
-import { getProducts, getCategories, getSubcategoryIds } from "@/lib/woocommerce";
+import { getProducts, getProductsPage, getCategories, getSubcategoryIds } from "@/lib/woocommerce";
 import ProductGrid from "@/components/ProductGrid";
 import Link from "next/link";
 
@@ -25,9 +25,12 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   const categories = await getCategories();
   const topCategories = categories.filter((c) => c.parent === 0 && c.count > 0 && c.slug !== "uncategorized" && c.slug !== "grading" && c.slug !== "tcg-products-all-languages");
 
-  // If a category is selected, also fetch from its subcategories
-  let allProducts: Awaited<ReturnType<typeof getProducts>>;
+  const perPage = 12;
+  let products: Awaited<ReturnType<typeof getProducts>>;
+  let totalProducts: number;
+
   if (categoryId && !search) {
+    // Category with subcategories — need to fetch all and merge
     const subIds = await getSubcategoryIds(categoryId);
     const allCatIds = [categoryId, ...subIds];
     const results = await Promise.all(
@@ -41,7 +44,6 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
       seen.add(p.id);
       return true;
     });
-    // Sort
     if (orderby === "price") {
       merged.sort((a, b) => {
         const pa = parseFloat(a.price) || 0;
@@ -55,20 +57,22 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
           : new Date(b.date_created).getTime() - new Date(a.date_created).getTime()
       );
     }
-    allProducts = merged;
+    totalProducts = merged.length;
+    const start = (page - 1) * perPage;
+    products = merged.slice(start, start + perPage);
   } else {
-    allProducts = await getProducts({
-      per_page: 100,
+    // Default / search — single fast API call with server-side pagination
+    const result = await getProductsPage({
+      page,
+      per_page: perPage,
       search: search || undefined,
       category: categoryId,
       orderby,
       order,
     });
+    products = result.products;
+    totalProducts = result.total;
   }
-
-  const perPage = 12;
-  const start = (page - 1) * perPage;
-  const products = allProducts.slice(start, start + perPage);
 
   const buildUrl = (overrides: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
@@ -152,7 +156,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
           {/* Sort bar */}
           <div className="flex flex-wrap items-center justify-between mb-8 pb-5 border-b border-purple-100/50">
             <p className="text-sm text-gray-400 font-medium">
-              Showing <span className="text-gray-700 font-semibold">{allProducts.length}</span> products
+              Showing <span className="text-gray-700 font-semibold">{totalProducts}</span> products
             </p>
             <div className="flex items-center gap-1.5 mt-2 sm:mt-0">
               {[
@@ -194,7 +198,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
             <span className="px-5 py-2.5 text-sm text-gray-400 font-semibold bg-white rounded-xl border border-purple-100/50">
               Page {page}
             </span>
-            {start + perPage < allProducts.length && (
+            {page * perPage < totalProducts && (
               <Link
                 href={buildUrl({ page: String(page + 1) })}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-700 text-white text-sm font-bold hover:bg-purple-800 shadow-md shadow-purple-700/20 transition-all hover:scale-105"

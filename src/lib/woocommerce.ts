@@ -38,6 +38,32 @@ async function wcFetch<T>(endpoint: string, params: FetchParams = {}, method = "
   return res.json();
 }
 
+// Single-page fetch that also returns total count from WC headers
+async function wcFetchPage(endpoint: string, params: FetchParams = {}): Promise<{ products: WCProduct[]; total: number }> {
+  const url = new URL(`${BASE_URL}/wp-json/wc/v3/${endpoint}`);
+  url.searchParams.set("consumer_key", CONSUMER_KEY);
+  url.searchParams.set("consumer_secret", CONSUMER_SECRET);
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined) {
+      url.searchParams.set(key, String(value));
+    }
+  });
+
+  const res = await fetch(url.toString(), {
+    next: { revalidate: 60 },
+    headers: { "Content-Type": "application/json" },
+  } as RequestInit);
+
+  if (!res.ok) {
+    throw new Error(`WooCommerce API error: ${res.status} ${res.statusText}`);
+  }
+
+  const total = parseInt(res.headers.get("X-WP-Total") || "0", 10);
+  const products: WCProduct[] = await res.json();
+  return { products, total };
+}
+
 export interface GetProductsParams {
   page?: number;
   per_page?: number;
@@ -74,6 +100,27 @@ export async function getProducts(params: GetProductsParams = {}): Promise<WCPro
     (p) => p.stock_status === "instock" &&
       !p.categories.every((c) => c.slug === "uncategorized")
   );
+}
+
+// Fetch a single page of products with total count (fast — single API call)
+export async function getProductsPage(params: GetProductsParams & { page?: number; per_page?: number } = {}): Promise<{ products: WCProduct[]; total: number }> {
+  const { products, total } = await wcFetchPage("products", {
+    page: params.page || 1,
+    per_page: params.per_page || 12,
+    search: params.search,
+    category: params.category,
+    orderby: params.orderby || "date",
+    order: params.order || "desc",
+    status: "publish",
+    stock_status: "instock",
+  });
+
+  return {
+    products: products.filter(
+      (p) => !p.categories.every((c) => c.slug === "uncategorized")
+    ),
+    total,
+  };
 }
 
 export async function getProduct(slug: string): Promise<WCProduct | null> {
