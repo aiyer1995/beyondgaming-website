@@ -61,13 +61,15 @@ export default function AddToCartButton({ product, isGrading }: AddToCartButtonP
     setSelectedAddOns(new Set());
   };
 
-  if (isOutOfStock) {
+  const salesPaused = process.env.NEXT_PUBLIC_SALES_PAUSED === "true" && !isGrading;
+
+  if (isOutOfStock || salesPaused) {
     return (
       <button
         disabled
         className="w-full py-4 rounded-2xl bg-gray-100 text-gray-400 font-bold text-lg cursor-not-allowed border-2 border-gray-200"
       >
-        Out of Stock
+        {salesPaused ? "Sales Temporarily Paused" : "Out of Stock"}
       </button>
     );
   }
