@@ -16,7 +16,8 @@ const FEATURED_CATEGORIES = [
 ];
 
 export default async function HomePage() {
-  const { products: newArrivals } = await getProductsPage({ per_page: 15, orderby: "date", order: "desc" });
+  const { products } = await getProductsPage({ per_page: 50, orderby: "date", order: "desc" });
+  const newArrivals = products.slice(0, 15);
 
   return (
     <>
