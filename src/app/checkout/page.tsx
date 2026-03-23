@@ -151,10 +151,6 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!razorpayReady) {
-      setError("Payment system is loading. Please try again.");
-      return;
-    }
     setLoading(true);
     setError("");
 
@@ -226,6 +222,10 @@ export default function CheckoutPage() {
 
   const openRazorpay = () => {
     if (!paymentData) return;
+    if (!razorpayReady) {
+      setError("Payment system is still loading. Please wait a moment and try again.");
+      return;
+    }
     setLoading(true);
 
     const options = {
