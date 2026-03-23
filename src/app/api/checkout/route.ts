@@ -8,9 +8,6 @@ const razorpay = new Razorpay({
 });
 
 function calculateShipping(totalWeightKg: number): number {
-  // Base: ₹150 for up to 1kg
-  // Over 1kg: ₹65 per 0.6kg increment
-  // Capped at ₹500
   let cost = 150;
   if (totalWeightKg > 1) {
     const extraWeight = totalWeightKg - 1;
@@ -20,25 +17,31 @@ function calculateShipping(totalWeightKg: number): number {
   return Math.min(cost, 500);
 }
 
+export const maxDuration = 30;
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Fetch product weights to calculate shipping
+    // Fetch product weights — fallback to 0.5kg per item if API fails
     const lineItems: { product_id: number; quantity: number }[] = body.line_items;
-    const products = await Promise.all(
-      lineItems.map((item) => getProductById(item.product_id))
-    );
-
     let totalWeight = 0;
-    for (let i = 0; i < lineItems.length; i++) {
-      const weight = parseFloat(products[i].weight) || 0;
-      totalWeight += weight * lineItems[i].quantity;
+    try {
+      const products = await Promise.all(
+        lineItems.map((item) => getProductById(item.product_id).catch(() => null))
+      );
+      for (let i = 0; i < lineItems.length; i++) {
+        const p = products[i];
+        const weight = p ? parseFloat(p.weight) || 0.5 : 0.5;
+        totalWeight += weight * lineItems[i].quantity;
+      }
+    } catch {
+      // Fallback: estimate 0.5kg per item
+      totalWeight = lineItems.reduce((sum, item) => sum + 0.5 * item.quantity, 0);
     }
 
     const shippingCost = calculateShipping(totalWeight);
 
-    // Add shipping line to WC order
     const feeLines = (body.fee_lines || []).map((fee: { name: string; total: string }) => ({
       name: fee.name,
       total: fee.total,
@@ -61,9 +64,16 @@ export async function POST(request: NextRequest) {
       ...(couponLines.length > 0 ? { coupon_lines: couponLines } : {}),
     };
 
-    const order = await createOrder(orderPayload);
+    // Create WC order with one retry
+    let order;
+    try {
+      order = await createOrder(orderPayload);
+    } catch (err) {
+      console.error("First order attempt failed, retrying:", err);
+      order = await createOrder(orderPayload);
+    }
 
-    // Create Razorpay order with total (includes shipping)
+    // Create Razorpay order
     const amountInPaise = Math.round(parseFloat(order.total) * 100);
     const rzpOrder = await razorpay.orders.create({
       amount: amountInPaise,
@@ -86,8 +96,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Checkout error:", error);
+    const message = error instanceof Error ? error.message : "Failed to create order";
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to create order" },
+      { error: message.includes("fetch") ? "Could not connect to payment server. Please try again." : message },
       { status: 500 }
     );
   }
