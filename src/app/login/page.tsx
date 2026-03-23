@@ -74,14 +74,12 @@ function LoginForm() {
                 <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
                   Password
                 </label>
-                <a
-                  href="https://admin.beyondgaming.in/my-account/lost-password/"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  href="/forgot-password"
                   className="text-xs text-purple-600 hover:text-purple-800 font-medium"
                 >
                   Forgot Password?
-                </a>
+                </Link>
               </div>
               <input
                 id="password"
