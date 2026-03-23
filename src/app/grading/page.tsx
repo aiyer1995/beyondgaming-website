@@ -79,10 +79,16 @@ const FEATURES = [
 ];
 
 export default async function GradingPage() {
-  const [allGrading, lotData] = await Promise.all([
-    getProducts({ category: 302, per_page: 100 }),
-    getGradingLots(),
-  ]);
+  let allGrading: Awaited<ReturnType<typeof getProducts>> = [];
+  let lotData: Record<string, string> = FALLBACK_LOTS;
+  try {
+    [allGrading, lotData] = await Promise.all([
+      getProducts({ category: 302, per_page: 100 }),
+      getGradingLots(),
+    ]);
+  } catch {
+    // Build-time fallback — real data loads on first ISR request
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">

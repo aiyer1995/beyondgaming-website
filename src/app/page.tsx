@@ -16,8 +16,13 @@ const FEATURED_CATEGORIES = [
 ];
 
 export default async function HomePage() {
-  const { products } = await getProductsPage({ per_page: 50, orderby: "date", order: "desc" });
-  const newArrivals = products.slice(0, 15);
+  let newArrivals: Awaited<ReturnType<typeof getProductsPage>>["products"] = [];
+  try {
+    const { products } = await getProductsPage({ per_page: 50, orderby: "date", order: "desc" });
+    newArrivals = products.slice(0, 15);
+  } catch {
+    // Build-time fallback — real data loads on first ISR request
+  }
 
   return (
     <>
