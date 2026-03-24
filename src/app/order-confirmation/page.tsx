@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import GradingFormPopup from "@/app/grading/GradingFormPopup";
 
 function OrderConfirmationContent() {
   const searchParams = useSearchParams();
@@ -53,6 +54,9 @@ function OrderConfirmationContent() {
         >
           View My Orders
         </Link>
+        <GradingFormPopup
+          className="inline-flex items-center gap-2 bg-purple-100 text-purple-700 font-bold px-8 py-3.5 rounded-xl hover:bg-purple-200 transition-colors"
+        />
         <Link
           href="/shop"
           className="inline-flex items-center gap-2 bg-gray-100 text-gray-700 font-semibold px-8 py-3.5 rounded-xl hover:bg-gray-200 transition-colors"
