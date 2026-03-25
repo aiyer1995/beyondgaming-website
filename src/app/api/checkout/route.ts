@@ -51,8 +51,14 @@ export async function POST(request: NextRequest) {
       code: c.code,
     }));
 
-    const orderPayload = {
-      ...body,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const orderPayload: any = {
+      payment_method: body.payment_method,
+      payment_method_title: body.payment_method_title,
+      set_paid: body.set_paid,
+      billing: body.billing,
+      shipping: body.shipping,
+      line_items: body.line_items,
       shipping_lines: [
         {
           method_id: "flat_rate",
@@ -61,8 +67,9 @@ export async function POST(request: NextRequest) {
         },
       ],
       fee_lines: feeLines,
-      ...(couponLines.length > 0 ? { coupon_lines: couponLines } : {}),
     };
+    if (body.customer_id) orderPayload.customer_id = body.customer_id;
+    if (couponLines.length > 0) orderPayload.coupon_lines = couponLines;
 
     // Create WC order with one retry
     let order;
@@ -96,9 +103,8 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Checkout error:", error);
-    const message = error instanceof Error ? error.message : "Failed to create order";
     return NextResponse.json(
-      { error: message.includes("fetch") ? "Could not connect to payment server. Please try again." : message },
+      { error: "Order could not be placed. Please try again. If the issue persists, contact us on WhatsApp." },
       { status: 500 }
     );
   }
