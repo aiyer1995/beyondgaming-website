@@ -203,7 +203,7 @@ export default function CheckoutPage() {
       }
 
       if (!razorpayReady) {
-        setError("Payment system is still loading. Please try again.");
+        setError("Payment System is still loading. Please click on Place Order in 10-15 seconds. If the problem persists please get in touch with our team.");
         setLoading(false);
         return;
       }
