@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
@@ -44,15 +44,6 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [razorpayReady, setRazorpayReady] = useState(false);
-  const [paymentData, setPaymentData] = useState<{
-    wc_order_id: number;
-    razorpay_order_id: string;
-    amount: number;
-    currency: string;
-    shipping_total: string;
-    shipping_method: string | null;
-    order_total: string;
-  } | null>(null);
   const total = getTotal();
 
   const [couponCode, setCouponCode] = useState("");
@@ -211,30 +202,20 @@ export default function CheckoutPage() {
         throw new Error(data.error || "Failed to create order");
       }
 
-      // Show payment confirmation with shipping
-      setPaymentData(data);
-      setLoading(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-      setLoading(false);
-    }
-  };
+      if (!razorpayReady) {
+        setError("Payment system is still loading. Please try again.");
+        setLoading(false);
+        return;
+      }
 
-  const openRazorpay = () => {
-    if (!paymentData) return;
-    if (!razorpayReady) {
-      setError("Payment system is still loading. Please wait a moment and try again.");
-      return;
-    }
-    setLoading(true);
-
-    const options = {
-      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-      amount: paymentData.amount,
-      currency: paymentData.currency,
-      name: "Beyond Gaming",
-      description: `Order #${paymentData.wc_order_id}`,
-      order_id: paymentData.razorpay_order_id,
+      // Open Razorpay directly
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: data.amount,
+        currency: data.currency,
+        name: "Beyond Gaming",
+        description: `Order #${data.wc_order_id}`,
+        order_id: data.razorpay_order_id,
       prefill: {
         name: `${form.firstName} ${form.lastName}`,
         email: form.email,
@@ -254,7 +235,7 @@ export default function CheckoutPage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               ...response,
-              wc_order_id: paymentData.wc_order_id,
+              wc_order_id: data.wc_order_id,
             }),
           });
 
@@ -262,7 +243,7 @@ export default function CheckoutPage() {
 
           if (verifyRes.ok && verifyData.success) {
             clearCart();
-            router.push(`/order-confirmation?id=${paymentData.wc_order_id}`);
+            router.push(`/order-confirmation?id=${data.wc_order_id}`);
           } else {
             setError("Payment verification failed. Please contact support.");
             setLoading(false);
@@ -279,8 +260,12 @@ export default function CheckoutPage() {
       },
     };
 
-    const rzp = new window.Razorpay(options);
-    rzp.open();
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+      setLoading(false);
+    }
   };
 
   if (items.length === 0) {
@@ -664,71 +649,6 @@ export default function CheckoutPage() {
           </div>
         </form>
       </div>
-
-      {/* Payment Confirmation Modal */}
-      {paymentData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => { setPaymentData(null); }}
-          />
-          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-700 to-purple-600 p-6 text-white">
-              <h3 className="text-lg font-bold">Confirm Payment</h3>
-              <p className="text-purple-200 text-sm mt-1">Order #{paymentData.wc_order_id}</p>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Subtotal</span>
-                  <span className="font-medium text-gray-900">{formatPrice(total)}</span>
-                </div>
-                {appliedCoupon && couponDiscount > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-green-600">Discount ({appliedCoupon.code})</span>
-                    <span className="font-medium text-green-600">-{formatPrice(couponDiscount)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">
-                    Shipping
-                    {paymentData.shipping_method && (
-                      <span className="text-xs text-gray-400 block">{paymentData.shipping_method}</span>
-                    )}
-                  </span>
-                  <span className="font-medium text-gray-900">
-                    {parseFloat(paymentData.shipping_total) > 0
-                      ? formatPrice(parseFloat(paymentData.shipping_total))
-                      : "Free"}
-                  </span>
-                </div>
-                <div className="border-t border-gray-200 pt-3 flex justify-between">
-                  <span className="text-lg font-bold text-gray-900">Total</span>
-                  <span className="text-xl font-black text-purple-700">
-                    {formatPrice(parseFloat(paymentData.order_total))}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => setPaymentData(null)}
-                  className="flex-1 py-3 rounded-xl text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={openRazorpay}
-                  disabled={loading}
-                  className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-purple-700 to-purple-600 hover:from-purple-800 hover:to-purple-700 transition-all shadow-lg shadow-purple-700/20 disabled:opacity-50"
-                >
-                  {loading ? "Processing..." : "Pay Now"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
