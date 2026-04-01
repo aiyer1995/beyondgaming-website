@@ -23,20 +23,38 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Fetch product weights — fallback to 0.5kg per item if API fails
+    // Fetch products for stock check and weight calculation
     const lineItems: { product_id: number; quantity: number }[] = body.line_items;
     let totalWeight = 0;
     try {
       const products = await Promise.all(
         lineItems.map((item) => getProductById(item.product_id).catch(() => null))
       );
+
+      // Check stock availability
+      const oosNames: string[] = [];
+      for (let i = 0; i < lineItems.length; i++) {
+        const p = products[i];
+        if (p && p.stock_status !== "instock") {
+          oosNames.push(p.name);
+        } else if (p && p.manage_stock && p.stock_quantity !== null && p.stock_quantity < lineItems[i].quantity) {
+          oosNames.push(p.name);
+        }
+      }
+      if (oosNames.length > 0) {
+        return NextResponse.json(
+          { error: `One or more products are out of stock: ${oosNames.join(", ")}. Please update your cart and try again.` },
+          { status: 400 }
+        );
+      }
+
       for (let i = 0; i < lineItems.length; i++) {
         const p = products[i];
         const weight = p ? parseFloat(p.weight) || 0.5 : 0.5;
         totalWeight += weight * lineItems[i].quantity;
       }
     } catch {
-      // Fallback: estimate 0.5kg per item
+      // Fallback: estimate 0.5kg per item, skip stock check
       totalWeight = lineItems.reduce((sum, item) => sum + 0.5 * item.quantity, 0);
     }
 
