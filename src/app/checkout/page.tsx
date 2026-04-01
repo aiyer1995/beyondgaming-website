@@ -202,7 +202,12 @@ export default function CheckoutPage() {
         body: JSON.stringify(orderData),
       });
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error("Order could not be placed. Please try again. If the issue persists, contact us on WhatsApp.");
+      }
 
       if (!res.ok) {
         throw new Error(data.error || "Failed to create order");

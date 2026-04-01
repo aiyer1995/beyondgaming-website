@@ -38,10 +38,16 @@ async function wcFetch<T>(endpoint: string, params: FetchParams = {}, method = "
   const res = await fetch(url.toString(), options);
 
   if (!res.ok) {
-    throw new Error(`WooCommerce API error: ${res.status} ${res.statusText}`);
+    const text = await res.text().catch(() => "");
+    throw new Error(`WooCommerce API error: ${res.status} ${res.statusText}${text ? ` - ${text.slice(0, 200)}` : ""}`);
   }
 
-  return res.json();
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`WooCommerce returned invalid JSON: ${text.slice(0, 200)}`);
+  }
 }
 
 // ─── Master product list (single source of truth) ───
