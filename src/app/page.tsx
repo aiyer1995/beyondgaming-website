@@ -5,7 +5,7 @@ import { getProducts } from "@/lib/woocommerce";
 import { WCProduct } from "@/types/woocommerce";
 import Link from "next/link";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 const FEATURED_CATEGORIES = [
   { name: "Pokemon", slug: "pokemon-tcg-products", gradient: "from-yellow-400 via-amber-400 to-orange-500", emoji: "\u26A1", image: "/images/cat-pokemon.png" },
