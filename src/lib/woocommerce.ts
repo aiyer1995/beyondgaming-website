@@ -116,7 +116,7 @@ export async function getProducts(params: GetProductsParams = {}): Promise<WCPro
 
 // Fetch a single page of products with total count (fast — single API call)
 export async function getProductsPage(params: GetProductsParams & { page?: number; per_page?: number } = {}): Promise<{ products: WCProduct[]; total: number }> {
-  const cacheKey = `products:page:${params.page || 1}:${params.per_page || 12}:${params.category || "all"}:${params.orderby || "date"}:${params.order || "desc"}:${params.search || ""}`;
+  const cacheKey = `products:page:v2:${params.page || 1}:${params.per_page || 12}:${params.category || "all"}:${params.orderby || "date"}:${params.order || "desc"}:${params.search || ""}`;
 
   return getCached(cacheKey, async () => {
     const { products, total } = await wcFetchPage("products", {
@@ -127,12 +127,12 @@ export async function getProductsPage(params: GetProductsParams & { page?: numbe
       orderby: params.orderby || "date",
       order: params.order || "desc",
       status: "publish",
+      stock_status: "instock",
     });
 
     return {
       products: products.filter(
-        (p) => p.stock_status === "instock" &&
-          !p.categories.every((c) => c.slug === "uncategorized")
+        (p) => !p.categories.every((c) => c.slug === "uncategorized")
       ),
       total,
     };

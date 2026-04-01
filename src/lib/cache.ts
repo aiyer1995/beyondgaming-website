@@ -24,7 +24,7 @@ export async function getCached<T>(key: string, fetcher: () => Promise<T>, ttl =
   const data = await fetcher();
 
   try {
-    await redis.set(key, JSON.stringify(data), { ex: ttl });
+    await redis.set(key, data, { ex: ttl });
   } catch (err) {
     console.error("Redis set error:", err);
   }
