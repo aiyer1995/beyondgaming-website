@@ -142,6 +142,12 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!razorpayReady) {
+      setError("Payment System is still loading. Please click on Place Order in 10-15 seconds. If the problem persists please get in touch with our team.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -200,12 +206,6 @@ export default function CheckoutPage() {
 
       if (!res.ok) {
         throw new Error(data.error || "Failed to create order");
-      }
-
-      if (!razorpayReady) {
-        setError("Payment System is still loading. Please click on Place Order in 10-15 seconds. If the problem persists please get in touch with our team.");
-        setLoading(false);
-        return;
       }
 
       // Open Razorpay directly
@@ -287,7 +287,9 @@ export default function CheckoutPage() {
     <>
       <Script
         src="https://checkout.razorpay.com/v1/checkout.js"
+        strategy="afterInteractive"
         onLoad={() => setRazorpayReady(true)}
+        onError={() => setError("Failed to load payment system. Please refresh the page.")}
       />
       <div className="max-w-7xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Checkout</h1>
@@ -639,10 +641,10 @@ export default function CheckoutPage() {
                 </div>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !razorpayReady}
                   className="mt-6 w-full py-3.5 bg-purple-700 text-white font-semibold rounded-xl hover:bg-purple-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? "Processing..." : "Place Order"}
+                  {loading ? "Processing..." : !razorpayReady ? "Loading Payment..." : "Place Order"}
                 </button>
               </div>
             </div>
