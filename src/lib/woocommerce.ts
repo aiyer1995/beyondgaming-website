@@ -5,12 +5,9 @@ const BASE_URL = process.env.NEXT_PUBLIC_WOOCOMMERCE_URL!;
 const CONSUMER_KEY = process.env.WOOCOMMERCE_CONSUMER_KEY!;
 const CONSUMER_SECRET = process.env.WOOCOMMERCE_CONSUMER_SECRET!;
 
-// Cache TTLs in seconds
 const CACHE_TTL = {
-  products: 300,     // 5 min
-  product: 300,      // 5 min
+  master: 300,       // 5 min — single master product list
   categories: 600,   // 10 min
-  related: 300,      // 5 min
 };
 
 interface FetchParams {
@@ -47,31 +44,73 @@ async function wcFetch<T>(endpoint: string, params: FetchParams = {}, method = "
   return res.json();
 }
 
-// Single-page fetch that also returns total count from WC headers
-async function wcFetchPage(endpoint: string, params: FetchParams = {}): Promise<{ products: WCProduct[]; total: number }> {
-  const url = new URL(`${BASE_URL}/wp-json/wc/v3/${endpoint}`);
-  url.searchParams.set("consumer_key", CONSUMER_KEY);
-  url.searchParams.set("consumer_secret", CONSUMER_SECRET);
+// ─── Master product list (single source of truth) ───
 
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined) {
-      url.searchParams.set(key, String(value));
+async function fetchAllProducts(): Promise<WCProduct[]> {
+  return getCached("master:products", async () => {
+    const allProducts: WCProduct[] = [];
+    let page = 1;
+    const perPage = 100;
+
+    while (true) {
+      const batch = await wcFetch<WCProduct[]>("products", {
+        page,
+        per_page: perPage,
+        status: "publish",
+        orderby: "date",
+        order: "desc",
+      });
+      allProducts.push(...batch);
+      if (batch.length < perPage) break;
+      page++;
     }
-  });
 
-  const res = await fetch(url.toString(), {
-    next: { revalidate: 60 },
-    headers: { "Content-Type": "application/json" },
-  } as RequestInit);
+    return allProducts;
+  }, CACHE_TTL.master);
+}
 
-  if (!res.ok) {
-    throw new Error(`WooCommerce API error: ${res.status} ${res.statusText}`);
+// Get all in-stock products, optionally filtered
+function filterProducts(
+  all: WCProduct[],
+  opts: { category?: number; search?: string; orderby?: string; order?: string } = {}
+): WCProduct[] {
+  let products = all.filter(
+    (p) => p.stock_status === "instock" &&
+      !p.categories.every((c) => c.slug === "uncategorized")
+  );
+
+  if (opts.category) {
+    products = products.filter((p) => p.categories.some((c) => c.id === opts.category));
   }
 
-  const total = parseInt(res.headers.get("X-WP-Total") || "0", 10);
-  const products: WCProduct[] = await res.json();
-  return { products, total };
+  if (opts.search) {
+    const q = opts.search.toLowerCase();
+    products = products.filter((p) =>
+      p.name.toLowerCase().includes(q) ||
+      p.description.toLowerCase().includes(q) ||
+      p.short_description.toLowerCase().includes(q)
+    );
+  }
+
+  const orderby = opts.orderby || "date";
+  const order = opts.order || "desc";
+
+  products.sort((a, b) => {
+    let cmp = 0;
+    if (orderby === "price") {
+      cmp = parseFloat(a.price) - parseFloat(b.price);
+    } else if (orderby === "popularity") {
+      cmp = a.total_sales - b.total_sales;
+    } else {
+      cmp = new Date(a.date_created).getTime() - new Date(b.date_created).getTime();
+    }
+    return order === "asc" ? cmp : -cmp;
+  });
+
+  return products;
 }
+
+// ─── Public API ───
 
 export interface GetProductsParams {
   page?: number;
@@ -85,71 +124,29 @@ export interface GetProductsParams {
 }
 
 export async function getProducts(params: GetProductsParams = {}): Promise<WCProduct[]> {
-  const cacheKey = `products:all:${params.category || "all"}:${params.orderby || "date"}:${params.order || "desc"}:${params.search || ""}`;
-
-  return getCached(cacheKey, async () => {
-    const allProducts: WCProduct[] = [];
-    let page = 1;
-    const perPage = 100;
-
-    while (true) {
-      const batch = await wcFetch<WCProduct[]>("products", {
-        page,
-        per_page: perPage,
-        search: params.search,
-        category: params.category,
-        orderby: params.orderby || "date",
-        order: params.order || "desc",
-        status: "publish",
-      });
-      allProducts.push(...batch);
-      if (batch.length < perPage) break;
-      page++;
-    }
-
-    return allProducts.filter(
-      (p) => p.stock_status === "instock" &&
-        !p.categories.every((c) => c.slug === "uncategorized")
-    );
-  }, CACHE_TTL.products);
-}
-
-// Fetch a single page of products with total count (fast — single API call)
-export async function getProductsPage(params: GetProductsParams & { page?: number; per_page?: number } = {}): Promise<{ products: WCProduct[]; total: number }> {
-  const cacheKey = `products:page:v2:${params.page || 1}:${params.per_page || 12}:${params.category || "all"}:${params.orderby || "date"}:${params.order || "desc"}:${params.search || ""}`;
-
-  return getCached(cacheKey, async () => {
-    const { products, total } = await wcFetchPage("products", {
-      page: params.page || 1,
-      per_page: params.per_page || 12,
-      search: params.search,
-      category: params.category,
-      orderby: params.orderby || "date",
-      order: params.order || "desc",
-      status: "publish",
-    });
-
-    return {
-      products: products.filter(
-        (p) => p.stock_status === "instock" &&
-          !p.categories.every((c) => c.slug === "uncategorized")
-      ),
-      total,
-    };
-  }, CACHE_TTL.products);
+  const all = await fetchAllProducts();
+  return filterProducts(all, params);
 }
 
 export async function getProduct(slug: string): Promise<WCProduct | null> {
-  return getCached(`product:slug:${slug}`, async () => {
-    const products = await wcFetch<WCProduct[]>("products", { slug });
-    return products[0] || null;
-  }, CACHE_TTL.product);
+  const all = await fetchAllProducts();
+  return all.find((p) => p.slug === slug) || null;
 }
 
 export async function getProductById(id: number): Promise<WCProduct> {
-  return getCached(`product:id:${id}`, async () => {
-    return wcFetch<WCProduct>(`products/${id}`);
-  }, CACHE_TTL.product);
+  const all = await fetchAllProducts();
+  const product = all.find((p) => p.id === id);
+  if (!product) throw new Error(`Product ${id} not found`);
+  return product;
+}
+
+export async function getRelatedProducts(productIds: number[]): Promise<WCProduct[]> {
+  if (productIds.length === 0) return [];
+  const all = await fetchAllProducts();
+  const ids = productIds.slice(0, 2);
+  return ids
+    .map((id) => all.find((p) => p.id === id))
+    .filter((p): p is WCProduct => p !== null && p !== undefined);
 }
 
 export async function getCategories(): Promise<WCCategory[]> {
@@ -163,30 +160,16 @@ export async function getCategories(): Promise<WCCategory[]> {
 }
 
 export async function getCategoryBySlug(slug: string): Promise<WCCategory | null> {
-  return getCached(`category:slug:${slug}`, async () => {
-    const categories = await wcFetch<WCCategory[]>("products/categories", { slug });
-    return categories[0] || null;
-  }, CACHE_TTL.categories);
+  const categories = await getCategories();
+  return categories.find((c) => c.slug === slug) || null;
 }
 
 export async function getSubcategoryIds(parentId: number): Promise<number[]> {
-  return getCached(`subcategories:${parentId}`, async () => {
-    const subs = await wcFetch<WCCategory[]>("products/categories", { parent: parentId, per_page: 100 });
-    return subs.map((c) => c.id);
-  }, CACHE_TTL.categories);
+  const categories = await getCategories();
+  return categories.filter((c) => c.parent === parentId).map((c) => c.id);
 }
 
-export async function getRelatedProducts(productIds: number[]): Promise<WCProduct[]> {
-  if (productIds.length === 0) return [];
-  const ids = productIds.slice(0, 4);
-  const cacheKey = `related:${ids.join(",")}`;
-  return getCached(cacheKey, async () => {
-    const products = await Promise.all(ids.map((id) => getProductById(id).catch(() => null)));
-    return products.filter((p): p is WCProduct => p !== null);
-  }, CACHE_TTL.related);
-}
-
-// --- Write operations (never cached) ---
+// ─── Write operations (never cached) ───
 
 export async function createOrder(orderData: WCCreateOrder): Promise<WCOrder> {
   return wcFetch<WCOrder>("orders", {}, "POST", orderData);

@@ -1,4 +1,5 @@
 import { getProducts, getCategories, getSubcategoryIds } from "@/lib/woocommerce";
+import { WCProduct } from "@/types/woocommerce";
 import ProductGrid from "@/components/ProductGrid";
 import Link from "next/link";
 
@@ -22,63 +23,41 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   const orderby = params.orderby || "date";
   const order = params.order || "desc";
 
-  const perPage = 12;
-  let products: Awaited<ReturnType<typeof getProducts>>;
-  let totalProducts: number;
-  let topCategories: Awaited<ReturnType<typeof getCategories>>;
+  // All reads from single master cache — no extra API calls
+  const categories = await getCategories();
+  const topCategories = categories.filter((c) => c.parent === 0 && c.count > 0 && c.slug !== "uncategorized" && c.slug !== "grading" && c.slug !== "tcg-products-all-languages");
 
+  // Get effective category IDs (include subcategories)
+  let effectiveCategory = categoryId;
+  let allProducts: WCProduct[];
   if (categoryId && !search) {
-    // Fetch categories + subcategories in parallel
-    const [categories, subIds] = await Promise.all([
-      getCategories(),
-      getSubcategoryIds(categoryId),
-    ]);
-    topCategories = categories.filter((c) => c.parent === 0 && c.count > 0 && c.slug !== "uncategorized" && c.slug !== "grading" && c.slug !== "tcg-products-all-languages");
-
+    const subIds = await getSubcategoryIds(categoryId);
     const allCatIds = [categoryId, ...subIds];
-    const results = await Promise.all(
-      allCatIds.map((catId) =>
-        getProducts({ per_page: 100, category: catId, orderby, order })
-      )
-    );
+    // Merge products from parent + sub categories
     const seen = new Set<number>();
-    const merged = results.flat().filter((p) => {
-      if (seen.has(p.id)) return false;
-      seen.add(p.id);
-      return true;
-    });
-    if (orderby === "price") {
-      merged.sort((a, b) => {
-        const pa = parseFloat(a.price) || 0;
-        const pb = parseFloat(b.price) || 0;
-        return order === "asc" ? pa - pb : pb - pa;
-      });
-    } else if (orderby === "date") {
-      merged.sort((a, b) =>
-        order === "asc"
-          ? new Date(a.date_created).getTime() - new Date(b.date_created).getTime()
-          : new Date(b.date_created).getTime() - new Date(a.date_created).getTime()
-      );
+    allProducts = [];
+    for (const catId of allCatIds) {
+      const catProducts = await getProducts({ category: catId, orderby, order });
+      for (const p of catProducts) {
+        if (!seen.has(p.id)) {
+          seen.add(p.id);
+          allProducts.push(p);
+        }
+      }
     }
-    totalProducts = merged.length;
-    const start = (page - 1) * perPage;
-    products = merged.slice(start, start + perPage);
   } else {
-    // Fetch categories + products in parallel
-    const [categories, allProducts] = await Promise.all([
-      getCategories(),
-      getProducts({
-        search: search || undefined,
-        category: categoryId,
-        orderby,
-        order,
-      }),
-    ]);
-    topCategories = categories.filter((c) => c.parent === 0 && c.count > 0 && c.slug !== "uncategorized" && c.slug !== "grading" && c.slug !== "tcg-products-all-languages");
-    totalProducts = allProducts.length;
-    const start = (page - 1) * perPage;
-    products = allProducts.slice(start, start + perPage);
+    allProducts = await getProducts({
+      search: search || undefined,
+      category: effectiveCategory,
+      orderby,
+      order,
+    });
   }
+
+  const perPage = 12;
+  const totalProducts = allProducts.length;
+  const start = (page - 1) * perPage;
+  const products = allProducts.slice(start, start + perPage);
 
   const buildUrl = (overrides: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
