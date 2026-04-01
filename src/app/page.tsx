@@ -1,7 +1,8 @@
 import HeroBanner from "@/components/HeroBanner";
 import CategoryCard from "@/components/CategoryCard";
 import ProductGrid from "@/components/ProductGrid";
-import { getProductsPage } from "@/lib/woocommerce";
+import { getProducts } from "@/lib/woocommerce";
+import { WCProduct } from "@/types/woocommerce";
 import Link from "next/link";
 
 export const revalidate = 60;
@@ -16,10 +17,10 @@ const FEATURED_CATEGORIES = [
 ];
 
 export default async function HomePage() {
-  let newArrivals: Awaited<ReturnType<typeof getProductsPage>>["products"] = [];
+  let newArrivals: WCProduct[] = [];
   try {
-    const { products } = await getProductsPage({ per_page: 50, orderby: "date", order: "desc" });
-    newArrivals = products.slice(0, 15);
+    const allProducts = await getProducts({ orderby: "date", order: "desc" });
+    newArrivals = allProducts.slice(0, 15);
   } catch {
     // Build-time fallback — real data loads on first ISR request
   }

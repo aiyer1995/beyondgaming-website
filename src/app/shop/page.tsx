@@ -1,4 +1,4 @@
-import { getProducts, getProductsPage, getCategories, getSubcategoryIds } from "@/lib/woocommerce";
+import { getProducts, getCategories, getSubcategoryIds } from "@/lib/woocommerce";
 import ProductGrid from "@/components/ProductGrid";
 import Link from "next/link";
 
@@ -61,17 +61,16 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
     const start = (page - 1) * perPage;
     products = merged.slice(start, start + perPage);
   } else {
-    // Default / search — single fast API call with server-side pagination
-    const result = await getProductsPage({
-      page,
-      per_page: perPage,
+    // Default / search — fetch all, paginate client-side (cached via Redis)
+    const allProducts = await getProducts({
       search: search || undefined,
       category: categoryId,
       orderby,
       order,
     });
-    products = result.products;
-    totalProducts = result.total;
+    totalProducts = allProducts.length;
+    const start = (page - 1) * perPage;
+    products = allProducts.slice(start, start + perPage);
   }
 
   const buildUrl = (overrides: Record<string, string | undefined>) => {

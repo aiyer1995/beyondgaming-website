@@ -127,12 +127,12 @@ export async function getProductsPage(params: GetProductsParams & { page?: numbe
       orderby: params.orderby || "date",
       order: params.order || "desc",
       status: "publish",
-      stock_status: "instock",
     });
 
     return {
       products: products.filter(
-        (p) => !p.categories.every((c) => c.slug === "uncategorized")
+        (p) => p.stock_status === "instock" &&
+          !p.categories.every((c) => c.slug === "uncategorized")
       ),
       total,
     };
