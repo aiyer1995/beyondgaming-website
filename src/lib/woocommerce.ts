@@ -1,8 +1,17 @@
 import { WCProduct, WCCategory, WCOrder, WCCreateOrder, WCCustomer, WCCreateCustomer } from "@/types/woocommerce";
+import { getCached } from "./cache";
 
 const BASE_URL = process.env.NEXT_PUBLIC_WOOCOMMERCE_URL!;
 const CONSUMER_KEY = process.env.WOOCOMMERCE_CONSUMER_KEY!;
 const CONSUMER_SECRET = process.env.WOOCOMMERCE_CONSUMER_SECRET!;
+
+// Cache TTLs in seconds
+const CACHE_TTL = {
+  products: 300,     // 5 min
+  product: 300,      // 5 min
+  categories: 600,   // 10 min
+  related: 300,      // 5 min
+};
 
 interface FetchParams {
   [key: string]: string | number | undefined;
@@ -76,92 +85,113 @@ export interface GetProductsParams {
 }
 
 export async function getProducts(params: GetProductsParams = {}): Promise<WCProduct[]> {
-  // Fetch all pages of products
-  const allProducts: WCProduct[] = [];
-  let page = 1;
-  const perPage = 100;
+  const cacheKey = `products:all:${params.category || "all"}:${params.orderby || "date"}:${params.order || "desc"}:${params.search || ""}`;
 
-  while (true) {
-    const batch = await wcFetch<WCProduct[]>("products", {
-      page,
-      per_page: perPage,
+  return getCached(cacheKey, async () => {
+    const allProducts: WCProduct[] = [];
+    let page = 1;
+    const perPage = 100;
+
+    while (true) {
+      const batch = await wcFetch<WCProduct[]>("products", {
+        page,
+        per_page: perPage,
+        search: params.search,
+        category: params.category,
+        orderby: params.orderby || "date",
+        order: params.order || "desc",
+        status: "publish",
+      });
+      allProducts.push(...batch);
+      if (batch.length < perPage) break;
+      page++;
+    }
+
+    return allProducts.filter(
+      (p) => p.stock_status === "instock" &&
+        !p.categories.every((c) => c.slug === "uncategorized")
+    );
+  }, CACHE_TTL.products);
+}
+
+// Fetch a single page of products with total count (fast — single API call)
+export async function getProductsPage(params: GetProductsParams & { page?: number; per_page?: number } = {}): Promise<{ products: WCProduct[]; total: number }> {
+  const cacheKey = `products:page:${params.page || 1}:${params.per_page || 12}:${params.category || "all"}:${params.orderby || "date"}:${params.order || "desc"}:${params.search || ""}`;
+
+  return getCached(cacheKey, async () => {
+    const { products, total } = await wcFetchPage("products", {
+      page: params.page || 1,
+      per_page: params.per_page || 12,
       search: params.search,
       category: params.category,
       orderby: params.orderby || "date",
       order: params.order || "desc",
       status: "publish",
     });
-    allProducts.push(...batch);
-    if (batch.length < perPage) break;
-    page++;
-  }
 
-  return allProducts.filter(
-    (p) => p.stock_status === "instock" &&
-      !p.categories.every((c) => c.slug === "uncategorized")
-  );
-}
-
-// Fetch a single page of products with total count (fast — single API call)
-export async function getProductsPage(params: GetProductsParams & { page?: number; per_page?: number } = {}): Promise<{ products: WCProduct[]; total: number }> {
-  const { products, total } = await wcFetchPage("products", {
-    page: params.page || 1,
-    per_page: params.per_page || 12,
-    search: params.search,
-    category: params.category,
-    orderby: params.orderby || "date",
-    order: params.order || "desc",
-    status: "publish",
-  });
-
-  return {
-    products: products.filter(
-      (p) => p.stock_status === "instock" &&
-        !p.categories.every((c) => c.slug === "uncategorized")
-    ),
-    total,
-  };
+    return {
+      products: products.filter(
+        (p) => p.stock_status === "instock" &&
+          !p.categories.every((c) => c.slug === "uncategorized")
+      ),
+      total,
+    };
+  }, CACHE_TTL.products);
 }
 
 export async function getProduct(slug: string): Promise<WCProduct | null> {
-  const products = await wcFetch<WCProduct[]>("products", { slug });
-  return products[0] || null;
+  return getCached(`product:slug:${slug}`, async () => {
+    const products = await wcFetch<WCProduct[]>("products", { slug });
+    return products[0] || null;
+  }, CACHE_TTL.product);
 }
 
 export async function getProductById(id: number): Promise<WCProduct> {
-  return wcFetch<WCProduct>(`products/${id}`);
+  return getCached(`product:id:${id}`, async () => {
+    return wcFetch<WCProduct>(`products/${id}`);
+  }, CACHE_TTL.product);
 }
 
 export async function getCategories(): Promise<WCCategory[]> {
-  return wcFetch<WCCategory[]>("products/categories", {
-    per_page: 100,
-    orderby: "count",
-    order: "desc",
-  });
+  return getCached("categories:all", async () => {
+    return wcFetch<WCCategory[]>("products/categories", {
+      per_page: 100,
+      orderby: "count",
+      order: "desc",
+    });
+  }, CACHE_TTL.categories);
 }
 
 export async function getCategoryBySlug(slug: string): Promise<WCCategory | null> {
-  const categories = await wcFetch<WCCategory[]>("products/categories", { slug });
-  return categories[0] || null;
+  return getCached(`category:slug:${slug}`, async () => {
+    const categories = await wcFetch<WCCategory[]>("products/categories", { slug });
+    return categories[0] || null;
+  }, CACHE_TTL.categories);
 }
 
 export async function getSubcategoryIds(parentId: number): Promise<number[]> {
-  const subs = await wcFetch<WCCategory[]>("products/categories", { parent: parentId, per_page: 100 });
-  return subs.map((c) => c.id);
-}
-
-export async function createOrder(orderData: WCCreateOrder): Promise<WCOrder> {
-  return wcFetch<WCOrder>("orders", {}, "POST", orderData);
+  return getCached(`subcategories:${parentId}`, async () => {
+    const subs = await wcFetch<WCCategory[]>("products/categories", { parent: parentId, per_page: 100 });
+    return subs.map((c) => c.id);
+  }, CACHE_TTL.categories);
 }
 
 export async function getRelatedProducts(productIds: number[]): Promise<WCProduct[]> {
   if (productIds.length === 0) return [];
   const ids = productIds.slice(0, 4);
-  const products = await Promise.all(ids.map((id) => getProductById(id).catch(() => null)));
-  return products.filter((p): p is WCProduct => p !== null);
+  const cacheKey = `related:${ids.join(",")}`;
+  return getCached(cacheKey, async () => {
+    const products = await Promise.all(ids.map((id) => getProductById(id).catch(() => null)));
+    return products.filter((p): p is WCProduct => p !== null);
+  }, CACHE_TTL.related);
 }
 
-// Customer functions
+// --- Write operations (never cached) ---
+
+export async function createOrder(orderData: WCCreateOrder): Promise<WCOrder> {
+  return wcFetch<WCOrder>("orders", {}, "POST", orderData);
+}
+
 export async function getCustomer(id: number): Promise<WCCustomer> {
   return wcFetch<WCCustomer>(`customers/${id}`);
 }
