@@ -4,14 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { WCProduct } from "@/types/woocommerce";
 import { formatPrice, getStockLabel } from "@/lib/utils";
-import { useCartStore } from "@/store/cart";
 
 interface ProductCardProps {
   product: WCProduct;
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const { addItem } = useCartStore();
   const image = product.images[0];
   const stock = getStockLabel(product.stock_status, product.stock_quantity);
   const isOutOfStock = product.stock_status === "outofstock";
@@ -47,21 +45,6 @@ export default function ProductCard({ product }: ProductCardProps) {
               </span>
             )}
           </div>
-
-          {/* Quick add overlay */}
-          {!isOutOfStock && (
-            <div className="absolute inset-x-3 bottom-3 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
-              <button
-                onClick={(e) => { e.preventDefault(); addItem(product); }}
-                className="w-full py-2.5 bg-purple-900/90 backdrop-blur-sm text-white text-xs font-bold rounded-xl hover:bg-purple-800 transition-colors shadow-lg flex items-center justify-center gap-1.5"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                </svg>
-                Quick Add
-              </button>
-            </div>
-          )}
 
           {isOutOfStock && (
             <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] flex items-center justify-center">
