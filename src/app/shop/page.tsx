@@ -22,16 +22,19 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   const orderby = params.orderby || "date";
   const order = params.order || "desc";
 
-  const categories = await getCategories();
-  const topCategories = categories.filter((c) => c.parent === 0 && c.count > 0 && c.slug !== "uncategorized" && c.slug !== "grading" && c.slug !== "tcg-products-all-languages");
-
   const perPage = 12;
   let products: Awaited<ReturnType<typeof getProducts>>;
   let totalProducts: number;
+  let topCategories: Awaited<ReturnType<typeof getCategories>>;
 
   if (categoryId && !search) {
-    // Category with subcategories — need to fetch all and merge
-    const subIds = await getSubcategoryIds(categoryId);
+    // Fetch categories + subcategories in parallel
+    const [categories, subIds] = await Promise.all([
+      getCategories(),
+      getSubcategoryIds(categoryId),
+    ]);
+    topCategories = categories.filter((c) => c.parent === 0 && c.count > 0 && c.slug !== "uncategorized" && c.slug !== "grading" && c.slug !== "tcg-products-all-languages");
+
     const allCatIds = [categoryId, ...subIds];
     const results = await Promise.all(
       allCatIds.map((catId) =>
@@ -61,13 +64,17 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
     const start = (page - 1) * perPage;
     products = merged.slice(start, start + perPage);
   } else {
-    // Default / search — fetch all, paginate client-side (cached via Redis)
-    const allProducts = await getProducts({
-      search: search || undefined,
-      category: categoryId,
-      orderby,
-      order,
-    });
+    // Fetch categories + products in parallel
+    const [categories, allProducts] = await Promise.all([
+      getCategories(),
+      getProducts({
+        search: search || undefined,
+        category: categoryId,
+        orderby,
+        order,
+      }),
+    ]);
+    topCategories = categories.filter((c) => c.parent === 0 && c.count > 0 && c.slug !== "uncategorized" && c.slug !== "grading" && c.slug !== "tcg-products-all-languages");
     totalProducts = allProducts.length;
     const start = (page - 1) * perPage;
     products = allProducts.slice(start, start + perPage);

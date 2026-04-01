@@ -18,8 +18,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
   if (!product) notFound();
 
   const stock = getStockLabel(product.stock_status, product.stock_quantity);
-  const related = await getRelatedProducts(product.related_ids);
   const isGrading = product.categories.some((c) => c.slug === "grading");
+  // Fetch related products in parallel (non-blocking)
+  const related = await getRelatedProducts(product.related_ids.slice(0, 2));
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
