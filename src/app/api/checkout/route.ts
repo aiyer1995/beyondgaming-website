@@ -1,11 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createOrder, getProductById } from "@/lib/woocommerce";
+import { Redis } from "@upstash/redis";
 import Razorpay from "razorpay";
 
 const razorpay = new Razorpay({
   key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
   key_secret: process.env.RAZORPAY_KEY_SECRET!,
 });
+
+function getRedis() {
+  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) return null;
+  return new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  });
+}
+
+// Rate limit: max 3 orders per 10 minutes per IP
+async function checkRateLimit(ip: string): Promise<boolean> {
+  const redis = getRedis();
+  if (!redis) return true;
+  try {
+    const key = `ratelimit:checkout:${ip}`;
+    const count = await redis.incr(key);
+    if (count === 1) await redis.expire(key, 600);
+    return count <= 3;
+  } catch {
+    return true; // Allow if Redis fails
+  }
+}
 
 function calculateShipping(totalWeightKg: number): number {
   let cost = 150;
@@ -21,6 +44,16 @@ export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const allowed = await checkRateLimit(ip);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many orders. Please wait a few minutes before trying again." },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
 
     // Fetch products for stock check and weight calculation
