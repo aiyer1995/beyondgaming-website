@@ -2,12 +2,90 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import Script from "next/script";
+import { useEffect, useState } from "react";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
+
+declare global {
+  interface Window {
+    Razorpay: new (options: Record<string, unknown>) => { open: () => void };
+  }
+}
+
+const MAGIC_ENV_ENABLED =
+  process.env.NEXT_PUBLIC_MAGIC_CHECKOUT_ENABLED === "true";
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, getTotal, clearCart } = useCartStore();
   const total = getTotal();
+  const [magicReady, setMagicReady] = useState(false);
+  const [magicLoading, setMagicLoading] = useState(false);
+  const [magicError, setMagicError] = useState("");
+  const [magicQueryEnabled, setMagicQueryEnabled] = useState(false);
+
+  // Magic Checkout button is visible if either:
+  //   - the env var NEXT_PUBLIC_MAGIC_CHECKOUT_ENABLED=true is set (full launch), or
+  //   - the URL has ?magic=1 (private testing on prod without exposing the
+  //     button to all users)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("magic") === "1") setMagicQueryEnabled(true);
+  }, []);
+
+  const showMagic = MAGIC_ENV_ENABLED || magicQueryEnabled;
+
+  const handleMagicCheckout = async () => {
+    setMagicError("");
+
+    if (!magicReady) {
+      setMagicError("Express checkout is still loading. Please try again in a few seconds.");
+      return;
+    }
+
+    setMagicLoading(true);
+    try {
+      const res = await fetch("/api/razorpay/magic/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((item) => ({
+            product_id: item.product.id,
+            quantity: item.quantity,
+            add_ons: item.addOns,
+          })),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Could not start express checkout");
+      }
+
+      const options: Record<string, unknown> = {
+        key: data.key_id,
+        order_id: data.order_id,
+        amount: data.amount,
+        currency: data.currency,
+        name: "Beyond Gaming",
+        description: "Express Checkout",
+        one_click_checkout: true,
+        show_coupons: true,
+        redirect: true,
+        callback_url: `${window.location.origin}/api/razorpay/magic/callback`,
+        theme: { color: "#7c3aed" },
+        modal: {
+          ondismiss: () => setMagicLoading(false),
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      setMagicError(err instanceof Error ? err.message : "Express checkout failed");
+      setMagicLoading(false);
+    }
+  };
 
   if (items.length === 0) {
     return (
@@ -29,6 +107,14 @@ export default function CartPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
+      {showMagic && (
+        <Script
+          src="https://checkout.razorpay.com/v1/magic-checkout.js"
+          strategy="afterInteractive"
+          onLoad={() => setMagicReady(true)}
+          onError={() => setMagicError("Failed to load express checkout.")}
+        />
+      )}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
         <button
@@ -140,6 +226,30 @@ export default function CartPage() {
                 <span className="text-lg font-bold text-purple-900">{formatPrice(total)}</span>
               </div>
             </div>
+            {showMagic && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleMagicCheckout}
+                  disabled={magicLoading || !magicReady}
+                  className="block w-full py-3.5 text-center bg-gradient-to-r from-amber-400 to-amber-500 text-purple-900 font-bold rounded-xl hover:from-amber-300 hover:to-amber-400 transition-colors disabled:opacity-60 disabled:cursor-not-allowed mb-3"
+                >
+                  {magicLoading
+                    ? "Opening..."
+                    : !magicReady
+                      ? "Loading Express Checkout..."
+                      : "Express Checkout"}
+                </button>
+                {magicError && (
+                  <p className="text-xs text-red-500 mb-3 text-center">{magicError}</p>
+                )}
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <span className="text-xs text-gray-400 uppercase tracking-wider">or</span>
+                  <div className="flex-1 h-px bg-gray-200" />
+                </div>
+              </>
+            )}
             <Link
               href="/checkout"
               className="block w-full py-3.5 text-center bg-purple-700 text-white font-semibold rounded-xl hover:bg-purple-800 transition-colors"
