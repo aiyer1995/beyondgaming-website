@@ -20,7 +20,9 @@ export default async function HomePage() {
   let newArrivals: WCProduct[] = [];
   try {
     const allProducts = await getProducts({ orderby: "date", order: "desc" });
-    newArrivals = allProducts.slice(0, 15);
+    newArrivals = allProducts
+      .filter((p) => !p.categories.some((c) => c.slug === "grading"))
+      .slice(0, 15);
   } catch {
     // Build-time fallback — real data loads on first ISR request
   }
