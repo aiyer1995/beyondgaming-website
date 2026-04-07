@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
@@ -8,6 +8,12 @@ import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cart";
 import { useAuthStore } from "@/store/auth";
 import { formatPrice } from "@/lib/utils";
+
+// Razorpay's checkout.js is frequently blocked by ad blockers / privacy
+// extensions / corporate networks, and a blocked request often hangs
+// without firing onerror — so we also enforce a hard timeout and surface
+// a retry option to the user.
+const RAZORPAY_LOAD_TIMEOUT_MS = 8000;
 
 function calculateShipping(items: { product: { weight: string }; quantity: number }[]): number {
   let totalWeight = 0;
@@ -44,7 +50,29 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [razorpayReady, setRazorpayReady] = useState(false);
+  const [razorpayFailed, setRazorpayFailed] = useState(false);
+  const [scriptKey, setScriptKey] = useState(0);
   const total = getTotal();
+
+  // Timeout fallback: if onLoad never fires (script blocked / hung) within
+  // RAZORPAY_LOAD_TIMEOUT_MS, mark the script as failed so we can show the
+  // user an actionable error instead of a forever-stuck "Loading Payment...".
+  useEffect(() => {
+    if (razorpayReady) return;
+    const timer = window.setTimeout(() => {
+      if (typeof window !== "undefined" && !window.Razorpay) {
+        setRazorpayFailed(true);
+      }
+    }, RAZORPAY_LOAD_TIMEOUT_MS);
+    return () => window.clearTimeout(timer);
+  }, [razorpayReady, scriptKey]);
+
+  const retryRazorpay = () => {
+    setRazorpayFailed(false);
+    setRazorpayReady(false);
+    setError("");
+    setScriptKey((k) => k + 1);
+  };
 
   const [couponCode, setCouponCode] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
@@ -143,8 +171,13 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (razorpayFailed) {
+      setError("Payment system could not load. Please disable ad blockers / privacy extensions and tap Try Again, or contact us on WhatsApp.");
+      return;
+    }
+
     if (!razorpayReady) {
-      setError("Payment System is still loading. Please click on Place Order in 10-15 seconds. If the problem persists please get in touch with our team.");
+      setError("Payment system is still loading. Please try again in a few seconds.");
       return;
     }
 
@@ -291,10 +324,14 @@ export default function CheckoutPage() {
   return (
     <>
       <Script
+        key={`razorpay-${scriptKey}`}
         src="https://checkout.razorpay.com/v1/checkout.js"
         strategy="afterInteractive"
-        onLoad={() => setRazorpayReady(true)}
-        onError={() => setError("Failed to load payment system. Please refresh the page.")}
+        onLoad={() => {
+          setRazorpayReady(true);
+          setRazorpayFailed(false);
+        }}
+        onError={() => setRazorpayFailed(true)}
       />
       <div className="max-w-7xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Checkout</h1>
@@ -321,6 +358,38 @@ export default function CheckoutPage() {
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl p-4 text-sm">
                   {error}
+                </div>
+              )}
+
+              {razorpayFailed && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm">
+                  <p className="font-semibold text-amber-900 mb-1">
+                    Payment system blocked or unreachable
+                  </p>
+                  <p className="text-amber-800 mb-3">
+                    This is usually caused by an ad blocker, privacy extension,
+                    or a slow / restricted network. Try disabling extensions for
+                    this site, then click Try Again. If it still doesn&apos;t
+                    load, message us on WhatsApp and we&apos;ll process your
+                    order manually.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={retryRazorpay}
+                      className="px-4 py-2 bg-amber-600 text-white text-sm font-semibold rounded-lg hover:bg-amber-700 transition-colors"
+                    >
+                      Try Again
+                    </button>
+                    <a
+                      href="https://api.whatsapp.com/message/T6PFEF2VAFMVP1?autoload=1&app_absent=0"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 bg-[#25D366] text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-opacity"
+                    >
+                      Chat on WhatsApp
+                    </a>
+                  </div>
                 </div>
               )}
 
@@ -646,10 +715,16 @@ export default function CheckoutPage() {
                 </div>
                 <button
                   type="submit"
-                  disabled={loading || !razorpayReady}
+                  disabled={loading || !razorpayReady || razorpayFailed}
                   className="mt-6 w-full py-3.5 bg-purple-700 text-white font-semibold rounded-xl hover:bg-purple-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? "Processing..." : !razorpayReady ? "Loading Payment..." : "Place Order"}
+                  {loading
+                    ? "Processing..."
+                    : razorpayFailed
+                      ? "Payment Unavailable"
+                      : !razorpayReady
+                        ? "Loading Payment..."
+                        : "Place Order"}
                 </button>
               </div>
             </div>
