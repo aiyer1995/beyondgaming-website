@@ -1,0 +1,427 @@
+/*
+Theme Name: Beyond Gaming (Woodmart Child)
+Theme URI: https://beyondgaming.in
+Description: Beyond Gaming brand customization layer on top of Woodmart. Brings the look-and-feel of the Next.js storefront to the WooCommerce theme: deep purple + gold palette, gradient text utilities, custom buttons, product card hover treatments, dark header, and supporting animations.
+Author: Beyond Gaming
+Template: woodmart
+Version: 0.1.0
+Text Domain: beyondgaming
+*/
+
+/* ============================================================
+   1. BRAND TOKENS
+   Defined as CSS custom properties so they can be reused
+   anywhere and easily tweaked from one place.
+   ============================================================ */
+:root {
+  --bg-purple-900: #350361;
+  --bg-purple-800: #4a0e7a;
+  --bg-purple-700: #6b11a1;
+  --bg-purple-600: #9215ad;
+  --bg-purple-500: #a855f7;
+  --bg-purple-400: #c084fc;
+  --bg-purple-300: #d8b4fe;
+  --bg-purple-200: #e9d5ff;
+  --bg-purple-100: #f3e8ff;
+  --bg-purple-50:  #faf5ff;
+
+  --bg-gold-500: #f59e0b;
+  --bg-gold-400: #fbbf24;
+  --bg-gold-300: #fcd34d;
+
+  --bg-ink: #1a1a2e;
+  --bg-ink-deep: #1a0030;
+
+  --bg-font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --bg-radius-lg: 16px;
+  --bg-radius-xl: 24px;
+  --bg-radius-2xl: 32px;
+
+  --bg-shadow-soft: 0 4px 24px rgba(53, 3, 97, 0.08);
+  --bg-shadow-purple: 0 12px 32px rgba(107, 17, 161, 0.18);
+  --bg-shadow-gold: 0 12px 32px rgba(245, 158, 11, 0.25);
+}
+
+/* ============================================================
+   2. GLOBAL TYPOGRAPHY + BACKGROUND
+   ============================================================ */
+body,
+body.woodmart-theme {
+  font-family: var(--bg-font-sans) !important;
+  background-color: var(--bg-purple-50);
+  color: var(--bg-ink);
+}
+
+h1, h2, h3, h4, h5, h6,
+.entry-title,
+.product_title,
+.widget-title {
+  font-family: var(--bg-font-sans) !important;
+  color: var(--bg-ink-deep);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+a { color: var(--bg-purple-700); }
+a:hover { color: var(--bg-purple-900); }
+
+/* ============================================================
+   3. UTILITY CLASSES (ported from Next.js globals.css)
+   Use these in custom HTML blocks, page builder rich-text,
+   or any code snippet you embed in pages.
+   ============================================================ */
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b, #fcd34d, #f59e0b);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-purple {
+  background: linear-gradient(135deg, #9215ad, #6b11a1, #a855f7);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.bg-bg-gradient-dark {
+  background: linear-gradient(135deg, #1a0030 0%, #350361 50%, #6b11a1 100%);
+}
+
+.bg-bg-gradient-gold {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-dark {
+  background: rgba(53, 3, 97, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.noise { position: relative; }
+.noise::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+/* ============================================================
+   4. ANIMATIONS
+   ============================================================ */
+@keyframes bg-float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%      { transform: translateY(-20px) rotate(2deg); }
+}
+@keyframes bg-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes bg-slide-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes bg-gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+
+.animate-float    { animation: bg-float 6s ease-in-out infinite; }
+.animate-slide-up { animation: bg-slide-up 0.6s ease-out forwards; }
+.animate-shimmer  {
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: bg-shimmer 2s infinite;
+}
+
+/* ============================================================
+   5. WOODMART BUTTON OVERRIDES
+   Targets Woodmart's primary button classes and gives them the
+   purple-to-gold treatment from the Next.js design.
+   ============================================================ */
+.btn,
+.button,
+.wd-btn,
+.woocommerce a.button,
+.woocommerce button.button,
+.woocommerce input.button,
+.woocommerce #respond input#submit,
+.woocommerce-page a.button,
+.woocommerce-page button.button {
+  font-family: var(--bg-font-sans) !important;
+  font-weight: 700 !important;
+  border-radius: var(--bg-radius-lg) !important;
+  padding: 14px 28px !important;
+  letter-spacing: 0.01em;
+  text-transform: none !important;
+  transition: transform 0.2s ease, box-shadow 0.3s ease, background 0.3s ease !important;
+  border: none !important;
+}
+
+.btn-color-primary,
+.wd-btn-color-primary,
+.woocommerce a.button.alt,
+.woocommerce button.button.alt,
+.woocommerce #respond input#submit.alt,
+.woocommerce-page a.button.alt,
+.woocommerce-page button.button.alt,
+button[type="submit"].single_add_to_cart_button {
+  background: linear-gradient(135deg, var(--bg-purple-700), var(--bg-purple-600)) !important;
+  color: #ffffff !important;
+  box-shadow: var(--bg-shadow-purple) !important;
+}
+
+.btn-color-primary:hover,
+.wd-btn-color-primary:hover,
+.woocommerce a.button.alt:hover,
+.woocommerce button.button.alt:hover,
+button[type="submit"].single_add_to_cart_button:hover {
+  background: linear-gradient(135deg, var(--bg-purple-800), var(--bg-purple-700)) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(107, 17, 161, 0.32) !important;
+}
+
+/* "Gold" button variant — apply class .btn-gold to any element
+   you want in the gold-gradient style (use it on the hero CTA,
+   the order confirmation button, etc.) */
+.btn-gold {
+  background: linear-gradient(135deg, var(--bg-gold-400), var(--bg-gold-500)) !important;
+  color: var(--bg-ink-deep) !important;
+  box-shadow: var(--bg-shadow-gold) !important;
+}
+.btn-gold:hover {
+  background: linear-gradient(135deg, var(--bg-gold-300), var(--bg-gold-400)) !important;
+  transform: translateY(-2px);
+  color: var(--bg-ink-deep) !important;
+}
+
+/* ============================================================
+   6. PRODUCT CARDS
+   Target Woodmart's product card and bring the rounded,
+   shadowed treatment from the Next.js design.
+   ============================================================ */
+.product-grid-item,
+.wd-product,
+.woocommerce ul.products li.product {
+  border-radius: var(--bg-radius-xl) !important;
+  background: #ffffff;
+  box-shadow: var(--bg-shadow-soft);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+}
+
+.product-grid-item:hover,
+.wd-product:hover,
+.woocommerce ul.products li.product:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--bg-shadow-purple);
+}
+
+.product-grid-item .product-image-link,
+.wd-product .product-image-link,
+.woocommerce ul.products li.product a img {
+  border-radius: var(--bg-radius-xl) var(--bg-radius-xl) 0 0;
+}
+
+.product-grid-item .price,
+.wd-product .price,
+.woocommerce ul.products li.product .price {
+  color: var(--bg-purple-700) !important;
+  font-weight: 800 !important;
+  font-size: 18px !important;
+}
+
+.product-grid-item .product-title,
+.wd-product .product-title,
+.woocommerce ul.products li.product h2,
+.woocommerce ul.products li.product h3 {
+  font-weight: 700 !important;
+  color: var(--bg-ink-deep) !important;
+  font-size: 15px !important;
+  line-height: 1.4;
+}
+
+/* ============================================================
+   7. SITE HEADER (DARK)
+   Recolors Woodmart's header to the deep purple from the Next
+   site. Tweak `.whb-header` if your header builder uses a
+   different wrapper.
+   ============================================================ */
+.whb-header,
+.whb-main-header,
+.site-header {
+  background: linear-gradient(135deg, var(--bg-ink-deep) 0%, var(--bg-purple-900) 50%, var(--bg-purple-800) 100%) !important;
+  border-bottom: 2px solid var(--bg-gold-400);
+}
+
+.whb-header a,
+.whb-main-header a,
+.site-header a {
+  color: #ffffff;
+}
+
+.whb-header a:hover,
+.whb-main-header a:hover {
+  color: var(--bg-gold-400);
+}
+
+.whb-header .wd-tools-icon,
+.whb-header .wd-header-cart .wd-tools-icon {
+  color: #ffffff;
+}
+
+/* ============================================================
+   8. SITE FOOTER (DARK)
+   ============================================================ */
+.site-footer,
+.footer-container {
+  background: linear-gradient(180deg, var(--bg-ink-deep) 0%, #0d0018 100%) !important;
+  color: rgba(255, 255, 255, 0.85);
+  position: relative;
+}
+.site-footer a,
+.footer-container a {
+  color: var(--bg-purple-200);
+}
+.site-footer a:hover,
+.footer-container a:hover {
+  color: var(--bg-gold-400);
+}
+.site-footer h1,
+.site-footer h2,
+.site-footer h3,
+.site-footer h4,
+.site-footer h5,
+.site-footer .widget-title,
+.footer-container .widget-title {
+  color: #ffffff !important;
+}
+
+/* ============================================================
+   9. CART DRAWER (Woodmart side cart)
+   Restyles the slide-out mini cart to match the look.
+   ============================================================ */
+.wd-side-hidden.wd-cart-drawer,
+.wd-cart-drawer {
+  background: #ffffff;
+}
+.wd-cart-drawer .wd-heading,
+.wd-cart-drawer .widget-title {
+  color: var(--bg-ink-deep) !important;
+  font-weight: 800 !important;
+}
+.wd-cart-drawer .price {
+  color: var(--bg-purple-700) !important;
+  font-weight: 800 !important;
+}
+.wd-cart-drawer .checkout {
+  background: linear-gradient(135deg, var(--bg-purple-700), var(--bg-purple-600)) !important;
+  color: #ffffff !important;
+}
+
+/* ============================================================
+   10. FORMS (inputs, selects, textareas)
+   ============================================================ */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="number"],
+input[type="search"],
+select,
+textarea,
+.woocommerce form .form-row input.input-text,
+.woocommerce form .form-row textarea,
+.woocommerce form .form-row select {
+  border-radius: 12px !important;
+  border: 1px solid #e5e5e5 !important;
+  padding: 12px 16px !important;
+  font-family: var(--bg-font-sans) !important;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="tel"]:focus,
+input[type="number"]:focus,
+input[type="search"]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--bg-purple-500) !important;
+  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.15) !important;
+  outline: none !important;
+}
+
+/* ============================================================
+   11. FLOATING WHATSAPP BUTTON
+   Add this to the body via functions.php (already wired) so
+   it's available on every page like in the Next.js site.
+   ============================================================ */
+.bg-whatsapp-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #25D366;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.35);
+  transition: transform 0.2s ease;
+  text-decoration: none;
+}
+.bg-whatsapp-fab:hover {
+  transform: scale(1.1);
+}
+.bg-whatsapp-fab svg {
+  width: 28px;
+  height: 28px;
+  fill: #ffffff;
+}
+
+/* ============================================================
+   12. PAGE-LEVEL HELPERS
+   Generic section padding & max-widths matching the Next.js
+   layout so any custom page content is consistent.
+   ============================================================ */
+.bg-section { padding: 64px 16px; }
+.bg-container { max-width: 1280px; margin: 0 auto; }
+
+@media (min-width: 768px) {
+  .bg-section { padding: 80px 24px; }
+}
+
+/* ============================================================
+   13. STAGGERED LIST ANIMATION
+   Apply to a parent of cards/grid items to fade them in
+   sequentially.
+   ============================================================ */
+.stagger-children > * {
+  opacity: 0;
+  animation: bg-slide-up 0.5s ease-out forwards;
+}
+.stagger-children > *:nth-child(1)  { animation-delay: 0.05s; }
+.stagger-children > *:nth-child(2)  { animation-delay: 0.10s; }
+.stagger-children > *:nth-child(3)  { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(4)  { animation-delay: 0.20s; }
+.stagger-children > *:nth-child(5)  { animation-delay: 0.25s; }
+.stagger-children > *:nth-child(6)  { animation-delay: 0.30s; }
+.stagger-children > *:nth-child(7)  { animation-delay: 0.35s; }
+.stagger-children > *:nth-child(8)  { animation-delay: 0.40s; }
+.stagger-children > *:nth-child(9)  { animation-delay: 0.45s; }
+.stagger-children > *:nth-child(10) { animation-delay: 0.50s; }
