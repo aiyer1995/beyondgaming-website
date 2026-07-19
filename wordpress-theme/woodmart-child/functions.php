@@ -407,6 +407,172 @@ function bg_get_in_progress_lots() {
 }
 
 /**
+ * Resolve a product's category tree into the three labels the
+ * product card needs: game, product type, and language.
+ *
+ * The catalog nests categories two levels deep, e.g.
+ *
+ *   Pokémon TCG                     <- game
+ *     └ Packs / Blisters            <- type
+ *   Bandai TCG
+ *     └ One Piece TCG               <- game
+ *         └ Booster Boxes (OP)      <- type
+ *   TCG Products
+ *     └ Japanese TCG                <- language
+ *
+ * so all three are derived from the tree rather than matched
+ * against hardcoded names. The full term list is fetched once
+ * per request and cached in a static.
+ *
+ * Returns ['game' => string, 'type' => string, 'language' => string]
+ * with empty strings for anything that can't be resolved.
+ */
+function bg_pcard_labels($product_id) {
+    static $all = null;
+
+    // Umbrella categories that group other categories but never
+    // describe a product on their own.
+    $umbrella = ['tcg-products-all-languages', 'bandai-tcg', 'pre-orders',
+                 'sale', 'uncategorized'];
+    $lang_parent_slug = 'tcg-products-all-languages';
+
+    if ($all === null) {
+        $terms = get_terms([
+            'taxonomy'   => 'product_cat',
+            'hide_empty' => false,
+        ]);
+        $all = [];
+        if (!is_wp_error($terms)) {
+            foreach ($terms as $t) {
+                $all[$t->term_id] = $t;
+            }
+        }
+    }
+
+    $lang_parent_id = 0;
+    foreach ($all as $t) {
+        if ($t->slug === $lang_parent_slug) {
+            $lang_parent_id = $t->term_id;
+            break;
+        }
+    }
+
+    $mine = wp_get_post_terms($product_id, 'product_cat', ['fields' => 'ids']);
+    if (is_wp_error($mine) || empty($mine)) {
+        return ['game' => '', 'type' => '', 'language' => ''];
+    }
+
+    $game = null;
+    $language = null;
+    $candidates = [];
+
+    foreach ($mine as $id) {
+        if (!isset($all[$id])) continue;
+        $term = $all[$id];
+
+        // Language lives under the "TCG Products" umbrella.
+        if ($lang_parent_id && $term->parent === $lang_parent_id) {
+            $language = $term;
+            continue;
+        }
+
+        if (in_array($term->slug, $umbrella, true)) continue;
+
+        // A game is either top-level (Pokémon TCG, Other TCG,
+        // Supplies & Merch) or sits directly under Bandai TCG
+        // (One Piece TCG, DragonBall TCG).
+        $parent_slug = ($term->parent && isset($all[$term->parent]))
+            ? $all[$term->parent]->slug
+            : '';
+        if ($term->parent === 0 || $parent_slug === 'bandai-tcg') {
+            // Prefer the most specific game: One Piece beats a
+            // bare top-level entry if both somehow matched.
+            if ($game === null || $parent_slug === 'bandai-tcg') {
+                $game = $term;
+            }
+            continue;
+        }
+
+        $candidates[] = $term;
+    }
+
+    // Type = whichever remaining category is a child of the game.
+    $type = null;
+    if ($game) {
+        foreach ($candidates as $c) {
+            if ($c->parent === $game->term_id) {
+                $type = $c;
+                break;
+            }
+        }
+    }
+
+    // Fallbacks: a product with no game category (e.g. a bare
+    // "Graded Slabs" item) still gets a bar label from whatever
+    // real category it does have.
+    if (!$game && !empty($candidates)) {
+        $game = array_shift($candidates);
+    }
+    if (!$type && !empty($candidates)) {
+        $type = $candidates[0];
+    }
+
+    $clean = function ($term, $strip_tcg = false) {
+        if (!$term) return '';
+        $name = html_entity_decode($term->name, ENT_QUOTES, 'UTF-8');
+        // Drop the "(OP)" / "(DB)" disambiguators — the bar above
+        // the chip already names the game.
+        $name = trim(preg_replace('/\s*\([A-Z]{2,3}\)\s*$/', '', $name));
+        if ($strip_tcg) {
+            $name = trim(preg_replace('/\s+TCG$/i', '', $name));
+        }
+        return $name;
+    };
+
+    return [
+        'game'     => $clean($game),
+        'type'     => $clean($type),
+        'language' => $clean($language, true),
+    ];
+}
+
+/**
+ * Turn a product's short description into a plain-text excerpt
+ * for the card.
+ *
+ * Catalog short descriptions are HTML lists carrying inline
+ * colour styles and a boilerplate lead-in ("Product Info:",
+ * "Rip It Live Information:"). Strips the markup, drops the
+ * lead-in label, and truncates on a word boundary.
+ */
+function bg_pcard_excerpt($product, $length = 110) {
+    $raw = $product->get_short_description();
+    if ($raw === '') {
+        $raw = $product->get_description();
+    }
+    if ($raw === '') return '';
+
+    $text = wp_strip_all_tags(str_replace(['<br>', '<br />', '</li>'], ' ', $raw));
+    $text = html_entity_decode($text, ENT_QUOTES, 'UTF-8');
+    $text = trim(preg_replace('/\s+/u', ' ', $text));
+
+    // Strip a leading "Something Info:" / "Something Information:"
+    // label so the excerpt opens on real content.
+    $text = preg_replace('/^[^:]{0,40}Info(rmation)?\s*:\s*/iu', '', $text);
+    $text = trim($text);
+
+    if (function_exists('mb_strlen') ? mb_strlen($text) <= $length : strlen($text) <= $length) {
+        return $text;
+    }
+    $cut = function_exists('mb_substr') ? mb_substr($text, 0, $length) : substr($text, 0, $length);
+    $sp  = function_exists('mb_strrpos') ? mb_strrpos($cut, ' ') : strrpos($cut, ' ');
+    if ($sp > 40) {
+        $cut = function_exists('mb_substr') ? mb_substr($cut, 0, $sp) : substr($cut, 0, $sp);
+    }
+    return rtrim($cut, " ,.;:-") . '…';
+}
+
+/**
  * Shortcode: [bg_new_arrivals]
  *
  * Renders the New Arrivals product grid for the homepage.
@@ -414,16 +580,25 @@ function bg_get_in_progress_lots() {
  * them with the brand product card markup. Excludes products
  * in the "grading" category (matches the Next.js logic).
  *
- * Usage: [bg_new_arrivals limit="15"]
+ * Usage: [bg_new_arrivals limit="8"]
  */
 add_shortcode('bg_new_arrivals', function ($atts) {
     $atts = shortcode_atts([
-        'limit'        => 15,
+        'limit'        => 8,
         'exclude_cats' => 'grading',
     ], $atts);
 
     if (!class_exists('WooCommerce')) {
         return '';
+    }
+
+    // The card CTAs use WooCommerce's native AJAX add-to-cart.
+    // Its script is only enqueued automatically on shop/product
+    // pages, so request it explicitly — this shortcode usually
+    // runs on the homepage, where it would otherwise be absent
+    // and every CTA would fall back to a full page reload.
+    if (get_option('woocommerce_enable_ajax_add_to_cart') === 'yes') {
+        wp_enqueue_script('wc-add-to-cart');
     }
 
     $args = [
@@ -471,12 +646,22 @@ add_shortcode('bg_new_arrivals', function ($atts) {
         $query->the_post();
         global $product;
         if (!$product) continue;
+        $pid       = get_the_ID();
         $permalink = get_permalink();
         $title     = get_the_title();
-        $image     = get_the_post_thumbnail_url(get_the_ID(), 'medium');
+        $image     = get_the_post_thumbnail_url($pid, 'medium');
         if (!$image) {
             $image = wc_placeholder_img_src('medium');
         }
+
+        $labels  = bg_pcard_labels($pid);
+        $excerpt = bg_pcard_excerpt($product);
+
+        // Meta line pairs the game with the print language —
+        // the catalog carries no condition attribute, and for
+        // sealed product the language is the useful signal.
+        $meta_bits = array_filter([$labels['game'], $labels['language']]);
+        $meta_line = implode(' · ', $meta_bits);
 
         // Build price HTML manually with wc_price() — bypasses
         // the woocommerce_get_price_html filter that Woodmart
@@ -492,30 +677,77 @@ add_shortcode('bg_new_arrivals', function ($atts) {
 
         // Compute stock label: "Low Stock" or "In Stock"
         $stock_label = 'In Stock';
-        $stock_class = 'bg-product-card__stock--in';
+        $stock_class = 'bg-pcard__stock--in';
         if ($product->managing_stock()) {
             $qty = (int) $product->get_stock_quantity();
             $product_low = (int) $product->get_low_stock_amount();
             $threshold = $product_low > 0 ? $product_low : $global_low_threshold;
             if ($qty > 0 && $qty <= $threshold) {
                 $stock_label = 'Low Stock';
-                $stock_class = 'bg-product-card__stock--low';
+                $stock_class = 'bg-pcard__stock--low';
             }
         }
+
+        // Simple in-stock products get WooCommerce's native AJAX
+        // add-to-cart; anything variable or unpurchasable falls
+        // back to a link through to the product page.
+        $ajax_cart = $product->is_type('simple')
+            && $product->is_purchasable()
+            && $product->is_in_stock();
         ?>
-        <a href="<?php echo esc_url($permalink); ?>" class="bg-product-card">
-            <div class="bg-product-card__image">
-                <img src="<?php echo esc_url($image); ?>" alt="<?php echo esc_attr($title); ?>" loading="lazy" />
-            </div>
-            <div class="bg-product-card__body">
-                <h3 class="bg-product-card__title"><?php echo esc_html($title); ?></h3>
-                <p class="bg-product-card__price"><?php echo wp_kses_post($price_html); ?></p>
-                <div class="bg-product-card__stock <?php echo esc_attr($stock_class); ?>">
-                    <span class="bg-product-card__stock-dot"></span>
+        <article class="bg-pcard">
+            <?php if ($labels['game']): ?>
+                <div class="bg-pcard__bar"><?php echo esc_html($labels['game']); ?></div>
+            <?php endif; ?>
+
+            <div class="bg-pcard__media">
+                <span class="bg-pcard__backdrop"
+                      style="background-image:url('<?php echo esc_url($image); ?>')"
+                      aria-hidden="true"></span>
+                <img class="bg-pcard__img" src="<?php echo esc_url($image); ?>"
+                     alt="<?php echo esc_attr($title); ?>" loading="lazy" />
+                <?php if ($labels['type']): ?>
+                    <span class="bg-pcard__type"><?php echo esc_html($labels['type']); ?></span>
+                <?php endif; ?>
+                <span class="bg-pcard__stock <?php echo esc_attr($stock_class); ?>">
+                    <span class="bg-pcard__stock-dot"></span>
                     <?php echo esc_html($stock_label); ?>
+                </span>
+            </div>
+
+            <div class="bg-pcard__body">
+                <h3 class="bg-pcard__title">
+                    <a class="bg-pcard__link" href="<?php echo esc_url($permalink); ?>">
+                        <?php echo esc_html($title); ?>
+                    </a>
+                </h3>
+                <?php if ($meta_line): ?>
+                    <p class="bg-pcard__meta"><?php echo esc_html($meta_line); ?></p>
+                <?php endif; ?>
+                <?php if ($excerpt): ?>
+                    <p class="bg-pcard__excerpt"><?php echo esc_html($excerpt); ?></p>
+                <?php endif; ?>
+
+                <div class="bg-pcard__foot">
+                    <span class="bg-pcard__price"><?php echo wp_kses_post($price_html); ?></span>
+                    <?php if ($ajax_cart): ?>
+                        <a href="<?php echo esc_url($product->add_to_cart_url()); ?>"
+                           class="bg-pcard__cta add_to_cart_button ajax_add_to_cart"
+                           data-product_id="<?php echo esc_attr($pid); ?>"
+                           data-quantity="1"
+                           data-product_sku="<?php echo esc_attr($product->get_sku()); ?>"
+                           rel="nofollow"
+                           aria-label="<?php echo esc_attr('Add ' . $title . ' to cart'); ?>">
+                            <?php echo esc_html__('Add', 'beyondgaming'); ?>
+                        </a>
+                    <?php else: ?>
+                        <a href="<?php echo esc_url($permalink); ?>" class="bg-pcard__cta">
+                            <?php echo esc_html__('View', 'beyondgaming'); ?>
+                        </a>
+                    <?php endif; ?>
                 </div>
             </div>
-        </a>
+        </article>
         <?php
     }
     wp_reset_postdata();
