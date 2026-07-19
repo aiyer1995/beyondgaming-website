@@ -4,7 +4,7 @@ Theme URI: https://beyondgaming.in
 Description: Beyond Gaming brand customization layer on top of Woodmart. Brings the look-and-feel of the Next.js storefront to the WooCommerce theme: deep purple + gold palette, gradient text utilities, custom buttons, product card hover treatments, dark header, and supporting animations.
 Author: Beyond Gaming
 Template: woodmart
-Version: 0.1.0
+Version: 0.2.0
 Text Domain: beyondgaming
 */
 
@@ -45,10 +45,57 @@ Text Domain: beyondgaming
 
 /* ============================================================
    2. GLOBAL TYPOGRAPHY + BACKGROUND
+   Force Geist as the brand font on everything that renders
+   text. The aggressive selector list catches Woodmart's many
+   typography overrides without touching icon fonts (Font
+   Awesome, dashicons, etc.).
    ============================================================ */
 body,
-body.woodmart-theme {
-  font-family: var(--bg-font-sans) !important;
+body.woodmart-theme,
+body p,
+body span,
+body a,
+body div,
+body li,
+body label,
+body input,
+body button,
+body select,
+body textarea,
+body .menu-item,
+body .menu-item-title,
+body .wd-menu-item,
+body .wd-menu-item-title,
+body .product_title,
+body .product-title,
+body .price,
+body .entry-title,
+body .widget-title,
+body .elementor-widget-text-editor,
+body .elementor-widget-heading,
+body .wd-button,
+body .btn {
+  font-family: var(--bg-font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+
+/* Keep icon fonts on their own families — never override */
+body .fa, body .fas, body .far, body .fab, body .fal, body .fad,
+body [class^="fa-"], body [class*=" fa-"],
+body .dashicons, body [class^="dashicons-"],
+body .wd-icon, body [class^="wd-icon-"],
+body .woodmart-icon, body [class^="woodmart-icon-"] {
+  font-family: inherit !important;
+}
+/* Re-set FontAwesome to its own family */
+body .fa, body .fas, body [class^="fas "], body [class*=" fas "],
+body [class^="fa-"], body [class*=" fa-"] {
+  font-family: "Font Awesome 6 Free", "Font Awesome 5 Free", FontAwesome !important;
+}
+body .fab, body [class^="fab "], body [class*=" fab "] {
+  font-family: "Font Awesome 6 Brands", "Font Awesome 5 Brands" !important;
+}
+
+body {
   background-color: var(--bg-purple-50);
   color: var(--bg-ink);
 }
@@ -57,7 +104,7 @@ h1, h2, h3, h4, h5, h6,
 .entry-title,
 .product_title,
 .widget-title {
-  font-family: var(--bg-font-sans) !important;
+  font-family: var(--bg-font-sans), -apple-system, BlinkMacSystemFont, sans-serif !important;
   color: var(--bg-ink-deep);
   font-weight: 800;
   letter-spacing: -0.01em;
@@ -145,6 +192,18 @@ a:hover { color: var(--bg-purple-900); }
   background-size: 200% 100%;
   animation: bg-shimmer 2s infinite;
 }
+
+@keyframes bg-marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee { animation: bg-marquee 30s linear infinite; }
+
+@keyframes bg-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+.animate-pulse { animation: bg-pulse 2s ease-in-out infinite; }
 
 /* ============================================================
    5. WOODMART BUTTON OVERRIDES
@@ -254,36 +313,741 @@ button[type="submit"].single_add_to_cart_button:hover {
 }
 
 /* ============================================================
-   7. SITE HEADER (DARK)
-   Recolors Woodmart's header to the deep purple from the Next
-   site. Tweak `.whb-header` if your header builder uses a
-   different wrapper.
+   7. SITE HEADER (DARK GRADIENT)
+   Matches the Next.js Navbar exactly:
+     bg-gradient-to-r from-[#1a0030] via-purple-900 to-purple-800
+   = linear-gradient(to right, #1a0030, #350361, #4a0e7a)
+   Applied ONLY to the outermost .whb-header wrapper. All inner
+   rows are forced transparent so the gradient flows continuously
+   across the entire header instead of restarting per row (which
+   caused the horizontal banding in the previous version).
    ============================================================ */
-.whb-header,
-.whb-main-header,
-.site-header {
-  background: linear-gradient(135deg, var(--bg-ink-deep) 0%, var(--bg-purple-900) 50%, var(--bg-purple-800) 100%) !important;
-  border-bottom: 2px solid var(--bg-gold-400);
+
+/* Outer wrapper — gets the gradient */
+body .whb-header,
+body .site-header {
+  background: linear-gradient(
+    to right,
+    #1a0030 0%,
+    #350361 50%,
+    #4a0e7a 100%
+  ) !important;
+  background-color: #1a0030 !important;
+  border-top: 0 !important;
+  border-bottom: 2px solid var(--bg-gold-400) !important;
+  box-shadow: none !important;
 }
 
-.whb-header a,
-.whb-main-header a,
-.site-header a {
-  color: #ffffff;
+/* Inner rows — transparent so the outer gradient shows through.
+   IMPORTANT exclusions:
+     - .whb-sticky-row → has its own background (detaches on scroll)
+     - .whb-header-bottom → the white menu row, has its own bg */
+body .whb-header > *:not(.whb-sticky-row):not(.whb-header-bottom),
+body .whb-main-header:not(.whb-sticky-row):not(.whb-header-bottom),
+body .whb-main-header > *:not(.whb-sticky-row):not(.whb-header-bottom),
+body .whb-main-header .whb-row:not(.whb-sticky-row):not(.whb-header-bottom),
+body .whb-main-header .whb-flex,
+body .whb-main-header .whb-flex-row,
+body .whb-header .whb-row:not(.whb-sticky-row):not(.whb-header-bottom),
+body .whb-row.whb-general-header:not(.whb-sticky-row):not(.whb-header-bottom),
+body .whb-row.whb-general-header-mobile:not(.whb-sticky-row):not(.whb-header-bottom),
+body .whb-color-light:not(.whb-sticky-row):not(.whb-header-bottom),
+body .whb-color-dark:not(.whb-sticky-row):not(.whb-header-bottom),
+body .whb-color-light .whb-main-header:not(.whb-sticky-row):not(.whb-header-bottom),
+body .whb-color-dark .whb-main-header:not(.whb-sticky-row):not(.whb-header-bottom),
+body .whb-top-bar:not(.whb-sticky-row):not(.whb-header-bottom) {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+  box-shadow: none !important;
 }
 
-.whb-header a:hover,
-.whb-main-header a:hover {
-  color: var(--bg-gold-400);
+/* ─── The sticky row ───
+   Confirmed class set from Woodmart's HTML inspection:
+     .whb-row.whb-header-bottom.whb-sticky-row.whb-with-bg
+        .whb-border-fullwidth.whb-color-dark...
+   This row goes position:fixed on scroll, detaches from the
+   parent, and needs its own dark gradient (the parent's
+   gradient is no longer behind it). */
+body .whb-sticky-row,
+body .whb-row.whb-sticky-row,
+body .whb-row.whb-header-bottom.whb-sticky-row,
+body .whb-row.whb-sticky-row.whb-with-bg {
+  background: linear-gradient(
+    to right,
+    #1a0030 0%,
+    #350361 50%,
+    #4a0e7a 100%
+  ) !important;
+  background-color: #1a0030 !important;
+  background-image: linear-gradient(
+    to right,
+    #1a0030 0%,
+    #350361 50%,
+    #4a0e7a 100%
+  ) !important;
+  border-bottom: 2px solid var(--bg-gold-400) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25) !important;
 }
 
-.whb-header .wd-tools-icon,
-.whb-header .wd-header-cart .wd-tools-icon {
-  color: #ffffff;
+/* Inner content of the sticky row — transparent so the row's
+   own gradient shows through. */
+body .whb-sticky-row .whb-flex-row,
+body .whb-sticky-row .container,
+body .whb-sticky-row .whb-flex,
+body .whb-sticky-row .whb-column,
+body .whb-sticky-row .whb-header-bottom-inner {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* Hairline separator between rows so they're still visually
+   distinguishable, without screaming gold dividers. */
+body .whb-main-header > .whb-row + .whb-row,
+body .whb-header .whb-row + .whb-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ─── Sticky / cloned header on scroll ───
+   Woodmart spawns a `.whb-clone` (or applies `.whb-sticked` to a row)
+   when the user scrolls past the original header. The exact class
+   varies between Woodmart versions, so use BOTH explicit selectors
+   AND attribute substring matchers to catch every variant. */
+body .whb-clone,
+body .whb-sticked,
+body .whb-scroll-slide-up,
+body .whb-scroll-stick,
+body .whb-fixed-row,
+body .whb-sticky-prepared,
+body .whb-sticky-shown,
+body [class*="whb-clone"],
+body [class*="whb-sticked"],
+body [class*="whb-fixed"],
+body [class*="whb-sticky"],
+body [class*="wd-header-sticked"],
+body [class*="wd-header-clone"],
+body [class*="wd-header-fixed"],
+body .whb-header.whb-sticked,
+body .whb-main-header.whb-sticked {
+  background: linear-gradient(
+    to right,
+    #1a0030 0%,
+    #350361 50%,
+    #4a0e7a 100%
+  ) !important;
+  background-color: #1a0030 !important;
+  background-image: linear-gradient(
+    to right,
+    #1a0030 0%,
+    #350361 50%,
+    #4a0e7a 100%
+  ) !important;
+  border-bottom: 2px solid var(--bg-gold-400) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Inner rows / containers inside the sticky clone — transparent so
+   the wrapper gradient shows through (same logic as the static
+   header in section 7). */
+body .whb-clone .whb-row,
+body .whb-clone .whb-flex-row,
+body .whb-clone .whb-flex,
+body .whb-clone .whb-main-header,
+body .whb-clone .whb-top-bar,
+body .whb-clone .whb-color-light,
+body .whb-clone .whb-color-dark,
+body .whb-sticked .whb-row,
+body .whb-sticked .whb-flex-row,
+body .whb-sticked .whb-flex,
+body .whb-sticked .whb-main-header,
+body .whb-sticked .whb-top-bar {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* Force all sticky-header text + icons + nav links to white,
+   gold on hover — matches the static header treatment. */
+body .whb-clone,
+body .whb-clone a,
+body .whb-clone .wd-tools-text,
+body .whb-clone .wd-tools-icon,
+body .whb-clone .menu-item > a,
+body .whb-clone .item-level-0 > a,
+body .whb-sticked a,
+body .whb-sticked .wd-tools-text,
+body .whb-sticked .wd-tools-icon,
+body .whb-sticked .menu-item > a,
+body .whb-sticked .item-level-0 > a {
+  color: #ffffff !important;
+}
+body .whb-clone a:hover,
+body .whb-clone .menu-item > a:hover,
+body .whb-clone .item-level-0:hover > a,
+body .whb-sticked a:hover {
+  color: var(--bg-gold-400) !important;
+}
+
+/* Search field inside the sticky clone — keep light/readable */
+body .whb-clone .wd-search-form input[type="search"],
+body .whb-clone .wd-search-form input.s {
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: var(--bg-ink-deep) !important;
+  border-radius: 12px !important;
+}
+
+/* All header text + nav links → white, hover → gold */
+body .whb-header,
+body .whb-main-header,
+body .whb-header a,
+body .whb-main-header a,
+body .whb-header .wd-tools-text,
+body .whb-header .wd-tools-icon,
+body .whb-main-header .wd-tools-text,
+body .whb-main-header .wd-tools-icon,
+body .whb-header .menu-item > a,
+body .whb-header .menu-item-title,
+body .whb-header .item-level-0 > a,
+body .site-header a {
+  color: #ffffff !important;
+}
+
+body .whb-header a:hover,
+body .whb-main-header a:hover,
+body .whb-header .menu-item > a:hover,
+body .whb-header .item-level-0:hover > a {
+  color: var(--bg-gold-400) !important;
+}
+
+/* ─── App-style search bar ───
+   Approach: leave Woodmart's natural HTML structure alone.
+   The OUTER .wd-search-form wrapper is made transparent/empty.
+   The INNER element (the actual <form> Woodmart renders) is
+   the visible pill and gets all the styling. */
+
+/* Outer wrapper — invisible, just provides positioning context */
+body [class*="whb"] .wd-search-form {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  display: block !important;
+  position: relative !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+/* The parent column the form lives in — make it span properly */
+body [class*="whb"] .wd-header-search-form,
+body [class*="whb"] .wd-search-form-element,
+body [class*="whb"] .whb-column.whb-col-center {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+/* The INNER form is the visible pill. This is whatever
+   wrapper Woodmart renders inside .wd-search-form (could be
+   <form>, .wd-form-search, etc.).
+
+   Math: 52px pill height - 5px top - 5px bottom = 42px button.
+   Right padding 5px so the button has equal breathing room
+   on top, right, and bottom. */
+body [class*="whb"] .wd-search-form > form,
+body [class*="whb"] .wd-search-form .wd-form-search,
+body [class*="whb"] .wd-search-form form[role="search"],
+body [class*="whb"] .wd-search-form .searchform {
+  background: rgba(255, 255, 255, 0.08) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 14px !important;
+  padding: 5px 5px 5px 22px !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 52px !important;
+  height: 52px !important;
+  box-sizing: border-box !important;
+  box-shadow: none !important;
+  position: relative !important;
+}
+
+/* AJAX live search results dropdown — let Woodmart handle the
+   layout, position, and visibility. We only override TEXT COLORS
+   so the results aren't invisible against the header's "all
+   anchors white" rule. */
+body [class*="whb"] .wd-search-form .wd-dropdown-results,
+body [class*="whb"] .wd-search-form .wd-dropdown-results *,
+body [class*="whb"] .wd-search-form .wd-dropdown-results a,
+body [class*="whb"] .wd-search-form .wd-search-results,
+body [class*="whb"] .wd-search-form .wd-search-results *,
+body [class*="whb"] .wd-search-form .wd-search-results a,
+body [class*="whb"] .wd-search-form .wd-dropdown *,
+body [class*="whb"] .wd-search-form .wd-dropdown a {
+  color: var(--bg-ink-deep) !important;
+}
+
+body [class*="whb"] .wd-search-form .wd-dropdown-results .price,
+body [class*="whb"] .wd-search-form .wd-dropdown-results .amount,
+body [class*="whb"] .wd-search-form .wd-dropdown-results bdi,
+body [class*="whb"] .wd-search-form .wd-search-results .price {
+  color: var(--bg-purple-700) !important;
+  font-weight: 700 !important;
+}
+
+body [class*="whb"] .wd-search-form .wd-dropdown-results del,
+body [class*="whb"] .wd-search-form .wd-dropdown-results del * {
+  color: #9ca3af !important;
+}
+
+/* Hide Woodmart's "Select Category" dropdown inside the search.
+   The app-style search is a single clean text field. */
+body [class*="whb"] .wd-search-form .wd-search-cat,
+body [class*="whb"] .wd-search-form .select-wrapper,
+body [class*="whb"] .wd-search-form select,
+body [class*="whb"] .wd-search-form .wd-cat-select,
+body [class*="whb"] .wd-search-form .product_cat,
+body [class*="whb"] .searchform .wd-search-cat,
+body [class*="whb"] .searchform select {
+  display: none !important;
+  width: 0 !important;
+  visibility: hidden !important;
+}
+
+body [class*="whb"] .wd-search-form input[type="search"],
+body [class*="whb"] .wd-search-form input.s,
+body [class*="whb"] .searchform input[type="search"],
+body [class*="whb"] form[role="search"] input[type="search"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  color: #ffffff !important;
+  font-family: var(--bg-font-sans) !important;
+  font-size: 14px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  flex: 1 1 100% !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  order: 1 !important;
+}
+body [class*="whb"] .wd-search-form input::placeholder,
+body [class*="whb"] .searchform input::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Search button — absolutely positioned inside the pill,
+   pinned to right: 5px. More reliable than flexbox because
+   Woodmart's button placement was overriding my flex order. */
+body [class*="whb"] .wd-search-form button[type="submit"],
+body [class*="whb"] .searchform button[type="submit"],
+body [class*="whb"] form[role="search"] button[type="submit"] {
+  background: var(--bg-purple-600) !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  max-width: 42px !important;
+  min-height: 42px !important;
+  max-height: 42px !important;
+  color: #ffffff !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: background 0.2s ease, transform 0.2s ease;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  position: absolute !important;
+  right: 5px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 5 !important;
+}
+body [class*="whb"] .wd-search-form button[type="submit"]:hover {
+  transform: translateY(-50%) scale(1.05) !important;
+}
+
+/* Reserve space on the right of the input so text doesn't
+   slide under the absolutely-positioned button. */
+body [class*="whb"] .wd-search-form input[type="search"] {
+  padding-right: 56px !important;
+}
+body [class*="whb"] .wd-search-form button[type="submit"]:hover {
+  background: var(--bg-purple-500) !important;
+  transform: scale(1.05);
+}
+
+/* ─── App-style icon buttons (account / cart) ───
+   Rounded square buttons with subtle border + transparent
+   background, matching the iOS app top bar. */
+body [class*="whb"] .wd-header-account .wd-tools-icon,
+body [class*="whb"] .wd-header-cart .wd-tools-icon,
+body [class*="whb"] .wd-tools-element .wd-tools-icon {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #ffffff !important;
+  transition: background 0.2s ease, transform 0.2s ease;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+/* Hover state — target hover on the parent link / container
+   too, so the effect triggers regardless of which element
+   actually receives the hover event. The account icon's
+   <a> tag was eating the hover before it reached the inner
+   .wd-tools-icon. */
+body [class*="whb"] .wd-header-account .wd-tools-icon:hover,
+body [class*="whb"] .wd-header-account:hover .wd-tools-icon,
+body [class*="whb"] .wd-header-account > a:hover .wd-tools-icon,
+body [class*="whb"] .wd-tools-element.wd-account:hover .wd-tools-icon,
+body [class*="whb"] .wd-header-cart .wd-tools-icon:hover,
+body [class*="whb"] .wd-header-cart:hover .wd-tools-icon,
+body [class*="whb"] .wd-header-cart > a:hover .wd-tools-icon,
+body [class*="whb"] .wd-tools-element.wd-header-cart:hover .wd-tools-icon {
+  background: rgba(255, 255, 255, 0.18) !important;
+  transform: translateY(-1px);
+}
+body [class*="whb"] .wd-header-account .wd-tools-icon::before,
+body [class*="whb"] .wd-header-cart .wd-tools-icon::before {
+  font-size: 18px !important;
+}
+
+/* Hide the "LOGIN / REGISTER" text label so only the icon
+   shows in the top bar (matches the app). Targets every
+   plausible Woodmart class name for the account label. */
+body [class*="whb"] .wd-header-account .wd-tools-text,
+body [class*="whb"] .wd-header-account .wd-tools-title,
+body [class*="whb"] .wd-header-account .wd-tools-label,
+body [class*="whb"] .wd-header-account .wd-header-account-title,
+body [class*="whb"] .wd-header-account .account-page-title,
+body [class*="whb"] .wd-header-account .wd-account-text,
+body [class*="whb"] .wd-header-account a > span:not([class*="icon"]):not(.wd-tools-icon),
+body [class*="whb"] .wd-tools-element.wd-account .wd-tools-text,
+body [class*="whb"] .wd-tools-element.wd-account .wd-tools-title,
+body [class*="whb"] .wd-account-text,
+body [class*="whb"] .wd-tools-account .wd-tools-text {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  font-size: 0 !important;
+}
+
+/* Hide cart text labels (price, subtotal, "Cart" word) so only
+   the icon + count badge show — matches the app's clean cart
+   button. Keeps .wd-cart-number (the count badge) visible. */
+body [class*="whb"] .wd-header-cart .wd-tools-text,
+body [class*="whb"] .wd-header-cart .wd-tools-title,
+body [class*="whb"] .wd-header-cart .wd-tools-label,
+body [class*="whb"] .wd-header-cart .wd-cart-subtotal,
+body [class*="whb"] .wd-header-cart .wd-cart-totals,
+body [class*="whb"] .wd-header-cart .amount,
+body [class*="whb"] .wd-header-cart > a > span:not([class*="icon"]):not(.wd-cart-number):not(.wd-tools-icon),
+body [class*="whb"] .wd-tools-cart .wd-tools-text,
+body [class*="whb"] .wd-tools-element.wd-header-cart .wd-tools-text,
+body [class*="whb"] .wd-tools-element.wd-header-cart .wd-cart-subtotal {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  font-size: 0 !important;
+}
+
+/* Cart count badge — proper circle pinned to the top-right
+   corner of the cart icon button, peeking just outside it.
+   Need overflow: visible on the parent so the badge isn't
+   clipped by the button's rounded corners. */
+body [class*="whb"] .wd-header-cart,
+body [class*="whb"] .wd-header-cart > a,
+body [class*="whb"] .wd-tools-element.wd-header-cart {
+  position: relative !important;
+  overflow: visible !important;
+}
+body [class*="whb"] .wd-header-cart .wd-tools-icon {
+  overflow: visible !important;
+}
+body [class*="whb"] .wd-cart-number {
+  position: absolute !important;
+  top: -6px !important;
+  right: -6px !important;
+  min-width: 20px !important;
+  width: 20px !important;
+  height: 20px !important;
+  padding: 0 5px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(135deg, var(--bg-gold-400), var(--bg-gold-500)) !important;
+  color: var(--bg-purple-900) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 10 !important;
+  box-sizing: border-box !important;
+  visibility: visible !important;
+  font-family: var(--bg-font-sans), -apple-system, sans-serif !important;
+}
+
+/* ─── Menu row (header bottom) ───
+   White row that sits below the dark main header. Dark purple
+   text on white, with a purple underline indicator on hover
+   and on the active page. Matches the iOS app style. */
+
+/* The row itself — white background, NOT transparent, override
+   the section-7 transparent rule via :not(.whb-sticky-row)
+   which already excluded it; we need to also explicitly set
+   white here. */
+body [class*="whb"] .whb-header-bottom,
+body [class*="whb"] .whb-row.whb-header-bottom,
+body .whb-header .whb-row.whb-header-bottom,
+body .whb-header > .whb-header-bottom {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  background-image: none !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+body [class*="whb"] .whb-header-bottom .wd-header-nav-element,
+body [class*="whb"] .whb-header-bottom .wd-header-main-nav {
+  width: 100% !important;
+}
+
+/* Menu items inside the bottom row — dark gray text, normal
+   weight, title case (the JS in bg-custom.js converts the
+   uppercase WP menu titles to title case). */
+body [class*="whb"] .whb-header-bottom .menu-item > a,
+body [class*="whb"] .whb-header-bottom .item-level-0 > a,
+body [class*="whb"] .whb-header-bottom .menu-item > a *,
+body [class*="whb"] .whb-header-bottom .menu-item-title,
+body [class*="whb"] .whb-header-bottom .nav-link-text {
+  position: relative;
+  color: #4b5563 !important; /* gray-600 */
+  font-weight: 500 !important;
+  font-size: 15px !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-family: var(--bg-font-sans), -apple-system, sans-serif !important;
+}
+
+body [class*="whb"] .whb-header-bottom .menu-item > a {
+  padding: 16px 20px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  transition: color 0.2s ease;
+}
+
+/* Hover underline indicator — slides in from center, purple */
+body [class*="whb"] .whb-header-bottom .menu-item > a::after,
+body [class*="whb"] .whb-header-bottom .item-level-0 > a::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 0;
+  height: 3px;
+  background: var(--bg-purple-700);
+  border-radius: 3px 3px 0 0;
+  transform: translateX(-50%);
+  transition: width 0.3s ease;
+}
+
+body [class*="whb"] .whb-header-bottom .menu-item:hover > a,
+body [class*="whb"] .whb-header-bottom .menu-item:hover > a * {
+  color: var(--bg-purple-700) !important;
+}
+
+body [class*="whb"] .whb-header-bottom .menu-item:hover > a::after,
+body [class*="whb"] .whb-header-bottom .item-level-0:hover > a::after,
+body [class*="whb"] .whb-header-bottom .menu-item.current-menu-item > a::after,
+body [class*="whb"] .whb-header-bottom .menu-item.current-menu-ancestor > a::after {
+  width: calc(100% - 40px);
+}
+
+/* Active menu item — purple text + permanent purple underline */
+body [class*="whb"] .whb-header-bottom .menu-item.current-menu-item > a,
+body [class*="whb"] .whb-header-bottom .menu-item.current-menu-item > a *,
+body [class*="whb"] .whb-header-bottom .menu-item.current-menu-ancestor > a,
+body [class*="whb"] .whb-header-bottom .menu-item.current-menu-ancestor > a * {
+  color: var(--bg-purple-700) !important;
+  font-weight: 600 !important;
+}
+
+/* ─── Dropdown submenus ───
+   The header's white-text rule above makes ALL anchors inside
+   the header white, including dropdown submenu items that
+   open on a light background. We re-style the dropdown panel
+   with a white background + dark text + tight padding.
+
+   Selectors use [class*="whb"] attribute matching so the rules
+   apply to BOTH the static header AND the sticky header (which
+   spawns under different wrapper classes), AND to nested
+   third-level submenus (.sub-menu .sub-menu). */
+
+/* Dropdown panel — white box, rounded, tight padding. Targets
+   .sub-menu, .wd-dropdown-menu and any nested .sub-menu inside. */
+body [class*="whb"] .sub-menu,
+body [class*="whb"] ul.sub-menu,
+body [class*="whb"] .wd-dropdown-menu,
+body [class*="whb"] .wd-sub-menu,
+body [class*="whb"] .wd-dropdown,
+body [class*="wd-header"] .sub-menu,
+body [class*="wd-header"] .wd-dropdown-menu,
+body [class*="whb"] .sub-menu .sub-menu,
+body [class*="wd-header"] .sub-menu .sub-menu {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  background-image: none !important;
+  border-radius: 12px !important;
+  box-shadow: 0 12px 32px rgba(53, 3, 97, 0.18) !important;
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+  /* Tight, symmetric 4px padding — overrides the UL browser
+     default of padding-inline-start: 40px AND any left-padding
+     Woodmart was adding via wrapper classes. */
+  padding: 4px !important;
+  padding-top: 4px !important;
+  padding-right: 4px !important;
+  padding-bottom: 4px !important;
+  padding-left: 4px !important;
+  margin: 0 !important;
+  list-style: none !important;
+  box-sizing: border-box !important;
+  min-width: 220px !important;
+  width: auto !important;
+}
+
+/* Reset Woodmart's default <li> padding/margin so my padding
+   is the only one that takes effect. Also force each item to
+   fill the full width of the dropdown. */
+body [class*="whb"] .sub-menu .menu-item,
+body [class*="whb"] .sub-menu li,
+body [class*="whb"] .wd-dropdown-menu .menu-item,
+body [class*="whb"] .wd-dropdown-menu li,
+body [class*="wd-header"] .sub-menu .menu-item,
+body [class*="wd-header"] .sub-menu li {
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Item anchor — flexbox so the chevron arrow gets pushed to
+   the far right edge instead of merging with the text. */
+body [class*="whb"] .sub-menu a,
+body [class*="whb"] .sub-menu .menu-item > a,
+body [class*="whb"] .sub-menu li > a,
+body [class*="whb"] .wd-dropdown-menu a,
+body [class*="whb"] .wd-sub-menu a,
+body [class*="whb"] .wd-dropdown a,
+body [class*="wd-header"] .sub-menu a,
+body [class*="wd-header"] .wd-dropdown-menu a {
+  color: var(--bg-ink-deep) !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  line-height: 1.3 !important;
+  padding: 7px 12px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  margin: 1px 0 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  transition: background 0.15s ease, color 0.15s ease !important;
+  border: 0 !important;
+  text-decoration: none !important;
+}
+
+/* Inner span/title — Woodmart wraps menu text in a span and
+   applies uppercase + bold there. The anchor's styles don't
+   reach the inner text, so target it explicitly. */
+body [class*="whb"] .sub-menu a *,
+body [class*="whb"] .sub-menu .menu-item-title,
+body [class*="whb"] .sub-menu .nav-link-text,
+body [class*="whb"] .wd-dropdown-menu a *,
+body [class*="whb"] .wd-dropdown-menu .menu-item-title,
+body [class*="whb"] .wd-dropdown-menu .nav-link-text,
+body [class*="wd-header"] .sub-menu a *,
+body [class*="wd-header"] .sub-menu .menu-item-title {
+  color: var(--bg-ink-deep) !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-family: var(--bg-font-sans), -apple-system, sans-serif !important;
+}
+
+/* Hover — purple text + light lavender background. NO
+   padding-left shift this time (was causing layout jitter). */
+body [class*="whb"] .sub-menu a:hover,
+body [class*="whb"] .sub-menu .menu-item > a:hover,
+body [class*="whb"] .wd-dropdown-menu a:hover,
+body [class*="whb"] .wd-sub-menu a:hover,
+body [class*="wd-header"] .sub-menu a:hover {
+  color: var(--bg-purple-700) !important;
+  background: var(--bg-purple-50) !important;
+}
+body [class*="whb"] .sub-menu a:hover *,
+body [class*="whb"] .sub-menu a:hover .menu-item-title,
+body [class*="whb"] .wd-dropdown-menu a:hover *,
+body [class*="wd-header"] .sub-menu a:hover * {
+  color: var(--bg-purple-700) !important;
+}
+
+/* Chevron for "menu-item-has-children" — flexbox above already
+   pushes it to the far right via justify-content: space-between.
+   Just style it: purple, with a small left margin so it never
+   touches the text. */
+body [class*="whb"] .sub-menu .menu-item-has-children > a::after,
+body [class*="whb"] .wd-dropdown-menu .menu-item-has-children > a::after,
+body [class*="whb"] .sub-menu .menu-item-has-children > a > .menu-item-arrow,
+body [class*="wd-header"] .sub-menu .menu-item-has-children > a::after {
+  color: var(--bg-purple-400) !important;
+  margin-left: 12px !important;
+  flex-shrink: 0 !important;
 }
 
 /* ============================================================
-   8. SITE FOOTER (DARK)
+   8. SITE FOOTER (DARK) — legacy Woodmart footer styling.
+   The custom footer in section 8b takes precedence on pages
+   where footer.php loads it. These rules only apply on pages
+   that fall back to Woodmart's footer (e.g. admin previews).
    ============================================================ */
 .site-footer,
 .footer-container {
@@ -310,6 +1074,208 @@ button[type="submit"].single_add_to_cart_button:hover {
 }
 
 /* ============================================================
+   8b. CUSTOM FOOTER (rendered by child theme footer.php)
+   Mirrors the Next.js Footer component: dark gradient, glow,
+   4-column grid (Brand / Shop / Company / Stay Updated),
+   social icons, payment trust badges, copyright bar.
+   ============================================================ */
+.bg-custom-footer {
+  position: relative;
+  background: linear-gradient(180deg, #1a0030 0%, #0d0018 100%);
+  color: #ffffff;
+  overflow: hidden;
+  isolation: isolate;
+  font-family: var(--bg-font-sans), -apple-system, sans-serif;
+  /* Break out of any parent container max-width / padding so the
+     footer spans the full viewport width even when wrapped in a
+     Woodmart / Elementor page container with default padding. */
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  margin-top: 64px;
+}
+
+.bg-custom-footer__glow {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 200px;
+  background: rgba(146, 21, 173, 0.10);
+  border-radius: 999px;
+  filter: blur(100px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-custom-footer__inner {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 64px 24px 32px 24px;
+}
+
+.bg-custom-footer__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  margin-bottom: 48px;
+}
+
+@media (min-width: 768px) {
+  .bg-custom-footer__grid {
+    grid-template-columns: 4fr 2fr 2fr 4fr;
+    gap: 40px;
+  }
+}
+
+.bg-custom-footer__col {
+  min-width: 0;
+}
+
+/* Brand column */
+.bg-custom-footer__logo img {
+  height: 48px;
+  width: auto;
+  display: block;
+  margin-bottom: 20px;
+}
+.bg-custom-footer__tagline {
+  color: rgba(216, 180, 254, 0.6);
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 320px;
+  margin: 0 0 24px 0;
+}
+.bg-custom-footer__social {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+.bg-custom-footer__social-link {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: var(--bg-purple-300);
+}
+.bg-custom-footer__social-link:hover {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(192, 132, 252, 0.30);
+  transform: scale(1.10);
+  color: var(--bg-purple-200);
+}
+.bg-custom-footer__social-link svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Link list columns */
+.bg-custom-footer__heading {
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: rgba(192, 132, 252, 0.80);
+  margin: 0 0 20px 0;
+  font-family: var(--bg-font-sans), -apple-system, sans-serif;
+}
+.bg-custom-footer__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.bg-custom-footer__list a {
+  color: rgba(216, 180, 254, 0.50);
+  font-size: 14px;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.bg-custom-footer__list a:hover {
+  color: #ffffff;
+}
+
+/* CTA column */
+.bg-custom-footer__cta-text {
+  color: rgba(216, 180, 254, 0.50);
+  font-size: 14px;
+  margin: 0 0 16px 0;
+  line-height: 1.6;
+}
+.bg-custom-footer__cta-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(to right, #9215ad, #c026d3);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(146, 21, 173, 0.20);
+  transition: opacity 0.2s ease;
+}
+.bg-custom-footer__cta-button:hover {
+  opacity: 0.9;
+  color: #ffffff;
+}
+.bg-custom-footer__cta-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.bg-custom-footer__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+.bg-custom-footer__badges span {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(192, 132, 252, 0.40);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 6px 12px;
+  border-radius: 8px;
+}
+
+/* Bottom copyright bar */
+.bg-custom-footer__bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+@media (min-width: 768px) {
+  .bg-custom-footer__bottom {
+    flex-direction: row;
+  }
+}
+.bg-custom-footer__bottom p {
+  font-size: 12px;
+  color: rgba(192, 132, 252, 0.40);
+  margin: 0;
+}
+
+/* ============================================================
    9. CART DRAWER (Woodmart side cart)
    Restyles the slide-out mini cart to match the look.
    ============================================================ */
@@ -333,12 +1299,14 @@ button[type="submit"].single_add_to_cart_button:hover {
 
 /* ============================================================
    10. FORMS (inputs, selects, textareas)
+   The :not(.qty) exclusion keeps WooCommerce quantity inputs
+   out of this rule — they get dedicated styling in section 10b.
    ============================================================ */
-input[type="text"],
+input[type="text"]:not(.qty),
 input[type="email"],
 input[type="password"],
 input[type="tel"],
-input[type="number"],
+input[type="number"]:not(.qty),
 input[type="search"],
 select,
 textarea,
@@ -351,17 +1319,97 @@ textarea,
   font-family: var(--bg-font-sans) !important;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
-input[type="text"]:focus,
+input[type="text"]:not(.qty):focus,
 input[type="email"]:focus,
 input[type="password"]:focus,
 input[type="tel"]:focus,
-input[type="number"]:focus,
+input[type="number"]:not(.qty):focus,
 input[type="search"]:focus,
 select:focus,
 textarea:focus {
   border-color: var(--bg-purple-500) !important;
   box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.15) !important;
   outline: none !important;
+}
+
+/* ============================================================
+   10b. WOOCOMMERCE QUANTITY SELECTOR
+   Restyles the - / qty / + control on product pages and cart.
+   Targets both Woodmart's wrapper and the standard WC markup.
+   ============================================================ */
+.quantity,
+.woocommerce .quantity,
+.wd-qty,
+.wd-style-default .quantity {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px;
+}
+
+.quantity input.qty,
+.woocommerce .quantity input.qty,
+.wd-qty input.qty {
+  width: 56px !important;
+  height: 44px !important;
+  padding: 0 !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  color: var(--bg-ink-deep) !important;
+  font-family: var(--bg-font-sans) !important;
+  font-weight: 700 !important;
+  font-size: 16px !important;
+  text-align: center !important;
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
+.quantity input.qty::-webkit-outer-spin-button,
+.quantity input.qty::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+.quantity input.qty:focus {
+  border-color: var(--bg-purple-500) !important;
+  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.15) !important;
+  outline: none !important;
+}
+
+/* The - and + buttons */
+.quantity .minus,
+.quantity .plus,
+.woocommerce .quantity .minus,
+.woocommerce .quantity .plus,
+.wd-qty .minus,
+.wd-qty .plus,
+.wd-buttons .minus,
+.wd-buttons .plus {
+  width: 44px !important;
+  height: 44px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  color: var(--bg-purple-700) !important;
+  font-family: var(--bg-font-sans) !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  transition: background 0.2s, color 0.2s, border-color 0.2s !important;
+  padding: 0 !important;
+}
+
+.quantity .minus:hover,
+.quantity .plus:hover,
+.woocommerce .quantity .minus:hover,
+.woocommerce .quantity .plus:hover,
+.wd-qty .minus:hover,
+.wd-qty .plus:hover {
+  background: var(--bg-purple-700) !important;
+  color: #ffffff !important;
+  border-color: var(--bg-purple-700) !important;
 }
 
 /* ============================================================
@@ -404,6 +1452,1297 @@ textarea:focus {
 
 @media (min-width: 768px) {
   .bg-section { padding: 80px 24px; }
+}
+
+/* ─── Remove the white gap between the dark header and the
+   first hero on the homepage. Woodmart/Elementor add a default
+   top padding to the page wrapper which leaves a visible
+   white strip. Force it to zero on .home and on any page where
+   the first child of <main> is our hero section. */
+body.home .main-page-wrapper,
+body.home .site-content,
+body.home #main,
+body.home main,
+body.home #content,
+body.home .page-wrapper,
+body.home .container > .main-page-wrapper,
+body.home .elementor-location-header + *,
+body.home .site-content > .container {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* Belt-and-braces: zero the top spacing on the very first
+   Elementor section / container of the homepage so even if
+   another wrapper was injected we still butt up against the
+   header cleanly. */
+body.home main > *:first-child,
+body.home #main > *:first-child,
+body.home .main-page-wrapper > *:first-child,
+body.home .elementor-location-single > *:first-child {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* ============================================================
+   12b. HERO BANNER
+   Self-contained block users paste into an Elementor HTML
+   widget (or Gutenberg Custom HTML block). Mirrors the
+   Next.js HeroBanner component.
+   ============================================================ */
+.bg-hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1a0030 0%, #350361 50%, #4a0e7a 100%);
+  min-height: 560px;
+  isolation: isolate;
+  /* Break out of any parent container's max-width / padding so the
+     hero spans the full viewport width even when wrapped in an
+     Elementor container with default page padding. */
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
+.bg-hero__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.bg-hero__bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: right center;
+}
+.bg-hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, #1a0030 0%, rgba(26, 0, 48, 0.85) 40%, transparent 80%);
+  z-index: 1;
+}
+.bg-hero__inner {
+  position: relative;
+  z-index: 2;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 64px 24px;
+}
+.bg-hero__content {
+  max-width: 600px;
+  color: #ffffff;
+}
+.bg-hero__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: rgba(53, 3, 97, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 24px;
+}
+.bg-hero__badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4ade80;
+  display: inline-block;
+}
+.bg-hero__badge-text {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #e9d5ff;
+}
+.bg-hero__title {
+  font-size: clamp(36px, 6vw, 64px) !important;
+  font-weight: 900 !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.02em;
+  color: #ffffff !important;
+  margin: 0 0 16px 0 !important;
+}
+.bg-hero__title .text-gradient-gold {
+  display: inline-block;
+}
+.bg-hero__tagline {
+  font-size: 20px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0 0 12px 0;
+}
+.bg-hero__desc {
+  font-size: 15px;
+  color: rgba(216, 180, 254, 0.8);
+  max-width: 520px;
+  line-height: 1.6;
+  margin: 0 0 32px 0;
+}
+.bg-hero__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+.bg-hero__cta {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 32px !important;
+  border-radius: 16px !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+  font-size: 16px !important;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.bg-hero__cta--gold {
+  background: linear-gradient(to right, #f59e0b, #fbbf24) !important;
+  color: #350361 !important;
+  box-shadow: 0 12px 32px rgba(245, 158, 11, 0.3);
+}
+.bg-hero__cta--gold:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 16px 40px rgba(245, 158, 11, 0.4);
+  color: #1a0030 !important;
+}
+.bg-hero__cta--glass {
+  background: rgba(53, 3, 97, 0.6) !important;
+  color: #ffffff !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.bg-hero__cta--glass:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  transform: translateY(-2px);
+}
+.bg-hero__cta svg {
+  width: 18px;
+  height: 18px;
+}
+.bg-hero__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+}
+@media (min-width: 768px) {
+  .bg-hero__stats { gap: 48px; }
+}
+.bg-hero__stat-value {
+  font-size: 24px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1;
+}
+.bg-hero__stat-label {
+  font-size: 10px;
+  color: rgba(216, 180, 254, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 6px;
+}
+.bg-hero__sparkle {
+  position: absolute;
+  border-radius: 50%;
+  z-index: 1;
+}
+.bg-hero__sparkle--1 { top: 20%; left: 10%; width: 8px; height: 8px; background: #fbbf24; opacity: 0.6; }
+.bg-hero__sparkle--2 { top: 32%; left: 25%; width: 6px; height: 6px; background: #d8b4fe; opacity: 0.5; }
+.bg-hero__sparkle--3 { bottom: 24%; left: 15%; width: 10px; height: 10px; background: #fcd34d; opacity: 0.4; }
+
+/* ============================================================
+   12c. HOMEPAGE SECTIONS
+   Self-contained blocks users paste into Elementor HTML
+   widgets. Mirrors the Next.js homepage one-to-one.
+   ============================================================ */
+
+/* Section heading helper — used by Shop By Fandom, New
+   Arrivals, Why Beyond Gaming. */
+.bg-section-heading {
+  text-align: center;
+  margin-bottom: 40px;
+}
+.bg-section-heading__eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--bg-purple-500);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin: 0 0 8px 0;
+}
+.bg-section-heading__title {
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 900;
+  color: var(--bg-ink-deep);
+  margin: 0;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+/* ─── 1. SHOP BY FANDOM ─── */
+.bg-fandom-section {
+  background: var(--bg-purple-50);
+  padding: 80px 24px;
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
+.bg-fandom-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.bg-fandom-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+@media (min-width: 768px) {
+  .bg-fandom-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1024px) {
+  .bg-fandom-grid { grid-template-columns: repeat(6, 1fr); gap: 20px; }
+}
+.bg-fandom-card {
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 4;
+  border-radius: 24px;
+  overflow: hidden;
+  text-decoration: none;
+  background: linear-gradient(135deg, var(--bg-purple-700), var(--bg-purple-900));
+  box-shadow: 0 8px 24px rgba(53, 3, 97, 0.10);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.bg-fandom-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 36px rgba(53, 3, 97, 0.25);
+}
+.bg-fandom-card__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.bg-fandom-card__bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+.bg-fandom-card__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(26, 0, 48, 0.85) 0%, rgba(26, 0, 48, 0.2) 50%, transparent 100%);
+  z-index: 1;
+}
+.bg-fandom-card__title {
+  position: absolute;
+  bottom: 24px;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  text-align: center;
+  font-weight: 800;
+  font-size: 18px;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.01em;
+  font-family: var(--bg-font-sans), -apple-system, sans-serif;
+}
+
+/* Per-card gradient tints (visible if no image) */
+.bg-fandom-card--pokemon { background: linear-gradient(135deg, #fbbf24, #f59e0b, #ea580c); }
+.bg-fandom-card--onepiece { background: linear-gradient(135deg, #ef4444, #dc2626, #991b1b); }
+.bg-fandom-card--dragonball { background: linear-gradient(135deg, #fb923c, #f97316, #ea580c); }
+.bg-fandom-card--supplies { background: linear-gradient(135deg, #10b981, #059669, #047857); }
+.bg-fandom-card--collectibles { background: linear-gradient(135deg, #f472b6, #d946ef, #9333ea); }
+.bg-fandom-card--graded { background: linear-gradient(135deg, #6366f1, #7c3aed, #6d28d9); }
+
+
+/* ─── 2. NEW ARRIVALS ─── */
+.bg-new-arrivals-section {
+  position: relative;
+  padding: 80px 24px;
+  background: linear-gradient(180deg, #ffffff 0%, var(--bg-purple-50) 50%, #ffffff 100%);
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  overflow: hidden;
+}
+.bg-new-arrivals-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 800px;
+  height: 400px;
+  background: rgba(216, 180, 254, 0.20);
+  border-radius: 999px;
+  filter: blur(100px);
+  pointer-events: none;
+}
+.bg-new-arrivals-inner {
+  position: relative;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.bg-new-arrivals-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.bg-new-arrivals-header__text {
+  text-align: left;
+}
+.bg-new-arrivals-header__eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--bg-purple-500);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin: 0 0 8px 0;
+}
+.bg-new-arrivals-header__title {
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 900;
+  color: var(--bg-ink-deep);
+  margin: 0;
+}
+.bg-new-arrivals-header__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-purple-50);
+  color: var(--bg-purple-700);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+.bg-new-arrivals-header__cta:hover {
+  background: var(--bg-purple-100);
+  color: var(--bg-purple-900);
+}
+.bg-new-arrivals-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+@media (min-width: 640px) {
+  .bg-new-arrivals-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1024px) {
+  .bg-new-arrivals-grid { grid-template-columns: repeat(5, 1fr); gap: 20px; }
+}
+.bg-product-card {
+  background: #ffffff;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(53, 3, 97, 0.06);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-decoration: none;
+  display: block;
+}
+.bg-product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px rgba(53, 3, 97, 0.18);
+}
+.bg-product-card__image {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: #ffffff;
+}
+.bg-product-card__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 12px;
+  transition: transform 0.3s ease;
+}
+.bg-product-card:hover .bg-product-card__image img {
+  transform: scale(1.05);
+}
+.bg-product-card__body {
+  padding: 14px 16px 18px 16px;
+}
+.bg-product-card__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bg-ink-deep);
+  margin: 0 0 6px 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 36px;
+}
+.bg-product-card__price {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--bg-purple-700);
+  margin: 0;
+}
+.bg-product-card__price del {
+  color: #9ca3af;
+  font-weight: 500;
+  margin-right: 6px;
+  font-size: 13px;
+}
+
+/* Stock status indicator (green dot + label) */
+.bg-product-card__stock {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 8px;
+  font-family: var(--bg-font-sans), -apple-system, sans-serif;
+}
+.bg-product-card__stock-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  flex-shrink: 0;
+}
+.bg-product-card__stock--in {
+  color: #10b981;
+}
+.bg-product-card__stock--low {
+  color: #f59e0b;
+}
+.bg-product-card__stock--low .bg-product-card__stock-dot {
+  background: #10b981;
+}
+
+
+/* ─── 3. WHY BEYOND GAMING (TRUST SECTION) ─── */
+.bg-trust-section {
+  padding: 80px 24px;
+  background: var(--bg-purple-50);
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
+.bg-trust-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.bg-trust-card {
+  position: relative;
+  background: linear-gradient(135deg, var(--bg-purple-900), var(--bg-purple-800), var(--bg-ink-deep));
+  border-radius: 32px;
+  padding: 48px 32px;
+  overflow: hidden;
+  isolation: isolate;
+}
+.bg-trust-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 256px;
+  height: 256px;
+  background: rgba(251, 191, 36, 0.10);
+  border-radius: 999px;
+  filter: blur(80px);
+  z-index: 0;
+}
+.bg-trust-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 192px;
+  height: 192px;
+  background: rgba(192, 132, 252, 0.20);
+  border-radius: 999px;
+  filter: blur(60px);
+  z-index: 0;
+}
+.bg-trust-content {
+  position: relative;
+  z-index: 1;
+}
+.bg-trust-heading {
+  text-align: center;
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 900;
+  color: #ffffff;
+  margin: 0 0 40px 0;
+  line-height: 1.1;
+}
+.bg-trust-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+@media (min-width: 768px) {
+  .bg-trust-grid { grid-template-columns: repeat(3, 1fr); }
+}
+.bg-trust-item {
+  background: rgba(53, 3, 97, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 28px;
+  transition: background 0.3s ease;
+}
+.bg-trust-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.bg-trust-item__icon {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, var(--bg-gold-400), var(--bg-gold-500));
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bg-purple-900);
+  margin-bottom: 20px;
+  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.20);
+  transition: transform 0.3s ease;
+}
+.bg-trust-item:hover .bg-trust-item__icon {
+  transform: scale(1.1) rotate(3deg);
+}
+.bg-trust-item__icon svg {
+  width: 28px;
+  height: 28px;
+}
+.bg-trust-item__title {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+.bg-trust-item__desc {
+  color: rgba(216, 180, 254, 0.80);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+
+/* ─── 3b. INSTAGRAM FEED ─── */
+.bg-instagram-section {
+  padding: 80px 24px;
+  background: var(--bg-purple-50);
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
+.bg-instagram-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* Profile header — avatar + handle + bio */
+.bg-instagram-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.bg-instagram-header__avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--bg-ink-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 2px solid #ffffff;
+  box-shadow: 0 4px 16px rgba(53, 3, 97, 0.10);
+}
+.bg-instagram-header__avatar img {
+  width: 80%;
+  height: auto;
+  object-fit: contain;
+}
+.bg-instagram-header__handle {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--bg-ink-deep);
+  margin: 0 0 4px 0;
+  font-family: var(--bg-font-sans), -apple-system, sans-serif;
+}
+.bg-instagram-header__bio {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+  font-family: var(--bg-font-sans), -apple-system, sans-serif;
+}
+
+/* Feed wrapper — Smash Balloon's output goes here */
+.bg-instagram-feed-wrapper {
+  margin-bottom: 32px;
+}
+
+/* ─── Smash Balloon Instagram Feed overrides ───
+   Force a clean 4-column grid with rounded corners +
+   subtle shadow on each post, matching the brand design. */
+.bg-instagram-feed-wrapper #sb_instagram,
+.bg-instagram-feed-wrapper .sb_instagram_outer_wrap,
+.bg-instagram-feed-wrapper .sbi_widget {
+  padding: 0 !important;
+  background: transparent !important;
+}
+.bg-instagram-feed-wrapper #sbi_images,
+.bg-instagram-feed-wrapper .sbi_items_wrap {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 16px !important;
+  padding: 0 !important;
+}
+@media (min-width: 768px) {
+  .bg-instagram-feed-wrapper #sbi_images,
+  .bg-instagram-feed-wrapper .sbi_items_wrap {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 20px !important;
+  }
+}
+.bg-instagram-feed-wrapper .sbi_item,
+.bg-instagram-feed-wrapper .sb_item {
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  box-shadow: 0 8px 24px rgba(53, 3, 97, 0.10);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.bg-instagram-feed-wrapper .sbi_item:hover,
+.bg-instagram-feed-wrapper .sb_item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px rgba(53, 3, 97, 0.18);
+}
+.bg-instagram-feed-wrapper .sbi_photo_wrap,
+.bg-instagram-feed-wrapper .sbi_link {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+}
+.bg-instagram-feed-wrapper .sbi_photo,
+.bg-instagram-feed-wrapper .sbi_photo img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 16px !important;
+}
+
+/* Hide Smash Balloon's default header / footer / load more —
+   we use our own custom CTAs below. */
+.bg-instagram-feed-wrapper #sbi_header,
+.bg-instagram-feed-wrapper .sbi_header_text,
+.bg-instagram-feed-wrapper #sbi_load,
+.bg-instagram-feed-wrapper .sbi_follow_btn,
+.bg-instagram-feed-wrapper #sbi_footer {
+  display: none !important;
+}
+
+/* CTAs row */
+.bg-instagram-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 32px;
+}
+.bg-instagram-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 0;
+  font-family: var(--bg-font-sans), -apple-system, sans-serif;
+}
+.bg-instagram-cta--dark {
+  background: var(--bg-ink-deep);
+  color: #ffffff;
+}
+.bg-instagram-cta--dark:hover {
+  background: var(--bg-purple-900);
+  transform: translateY(-2px);
+  color: #ffffff;
+}
+.bg-instagram-cta svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ─── 4. CTA BANNER ─── */
+.bg-cta-section {
+  padding: 80px 24px;
+  background: #ffffff;
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
+.bg-cta-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.bg-cta-banner {
+  position: relative;
+  background: linear-gradient(to right, var(--bg-gold-400), var(--bg-gold-500), #f59e0b);
+  border-radius: 32px;
+  padding: 48px 40px;
+  overflow: hidden;
+}
+.bg-cta-banner::before {
+  content: '';
+  position: absolute;
+  right: -32px;
+  bottom: -32px;
+  width: 160px;
+  height: 160px;
+  background: rgba(255, 255, 255, 0.10);
+  border-radius: 999px;
+}
+.bg-cta-banner::after {
+  content: '';
+  position: absolute;
+  left: -16px;
+  top: -16px;
+  width: 96px;
+  height: 96px;
+  background: rgba(255, 255, 255, 0.10);
+  border-radius: 999px;
+}
+.bg-cta-banner__inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  text-align: center;
+}
+@media (min-width: 768px) {
+  .bg-cta-banner__inner {
+    flex-direction: row;
+    text-align: left;
+    justify-content: space-between;
+  }
+}
+.bg-cta-banner__title {
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 900;
+  color: var(--bg-purple-900);
+  margin: 0;
+}
+.bg-cta-banner__text {
+  font-size: 14px;
+  color: rgba(53, 3, 97, 0.80);
+  margin: 6px 0 0 0;
+  font-weight: 500;
+}
+.bg-cta-banner__btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-purple-900);
+  color: #ffffff;
+  font-weight: 700;
+  padding: 16px 32px;
+  border-radius: 16px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 12px 32px rgba(53, 3, 97, 0.30);
+}
+.bg-cta-banner__btn:hover {
+  background: var(--bg-purple-800);
+  transform: scale(1.05);
+  color: #ffffff;
+}
+.bg-cta-banner__btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ─── Hero ticker (gold marquee bar) ─── */
+.bg-hero-ticker {
+  position: relative;
+  z-index: 3; /* sit above .bg-hero__overlay (z-index 1) and .bg-hero__bg */
+  background: linear-gradient(to right, #f59e0b, #fbbf24, #f59e0b);
+  padding: 12px 0;
+  overflow: hidden;
+}
+.bg-hero-ticker__track {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: bg-marquee 30s linear infinite;
+}
+.bg-hero-ticker__group {
+  display: inline-flex;
+  align-items: center;
+  gap: 32px;
+  padding-right: 32px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #350361;
+}
+.bg-hero-ticker__group span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ============================================================
+   12d. CART PAGE
+   ============================================================ */
+.woocommerce-cart .woocommerce {
+  font-family: var(--bg-font-sans), -apple-system, sans-serif;
+}
+
+/* Page heading */
+.woocommerce-cart .entry-title,
+.woocommerce-cart .page-title,
+.woocommerce-cart h1.entry-title {
+  font-size: clamp(28px, 4vw, 36px) !important;
+  font-weight: 900 !important;
+  color: var(--bg-ink-deep) !important;
+  letter-spacing: -0.01em;
+}
+
+/* The cart product table */
+.woocommerce-cart table.shop_table.cart {
+  border: 0 !important;
+  border-collapse: separate !important;
+  border-spacing: 0 12px !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+.woocommerce-cart table.shop_table.cart thead {
+  background: transparent !important;
+}
+.woocommerce-cart table.shop_table.cart thead th {
+  background: transparent !important;
+  color: #6b7280 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  border: 0 !important;
+  padding: 12px 16px !important;
+}
+.woocommerce-cart table.shop_table.cart tbody tr.cart_item {
+  background: #ffffff !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 16px rgba(53, 3, 97, 0.06) !important;
+}
+.woocommerce-cart table.shop_table.cart tbody tr.cart_item td {
+  border: 0 !important;
+  padding: 16px !important;
+  vertical-align: middle !important;
+}
+.woocommerce-cart table.shop_table.cart tbody tr.cart_item td.product-name {
+  font-weight: 600 !important;
+}
+.woocommerce-cart table.shop_table.cart tbody tr.cart_item td.product-name a {
+  color: var(--bg-ink-deep) !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+}
+.woocommerce-cart table.shop_table.cart tbody tr.cart_item td.product-name a:hover {
+  color: var(--bg-purple-700) !important;
+}
+.woocommerce-cart table.shop_table.cart .product-price,
+.woocommerce-cart table.shop_table.cart .product-subtotal {
+  color: var(--bg-purple-700) !important;
+  font-weight: 700 !important;
+}
+.woocommerce-cart table.shop_table.cart .product-thumbnail img {
+  border-radius: 12px !important;
+  max-width: 80px !important;
+  height: auto !important;
+}
+.woocommerce-cart table.shop_table.cart td.actions {
+  background: transparent !important;
+  padding: 24px 0 !important;
+}
+
+/* Coupon row */
+.woocommerce-cart .coupon {
+  display: flex !important;
+  gap: 12px !important;
+  align-items: center;
+}
+.woocommerce-cart .coupon input[type="text"] {
+  border-radius: 12px !important;
+  padding: 12px 16px !important;
+  border: 1px solid #e5e5e5 !important;
+  min-width: 200px !important;
+}
+.woocommerce-cart .coupon button[name="apply_coupon"] {
+  background: linear-gradient(135deg, var(--bg-gold-400), var(--bg-gold-500)) !important;
+  color: var(--bg-ink-deep) !important;
+  border-radius: 12px !important;
+  padding: 12px 24px !important;
+  font-weight: 700 !important;
+  box-shadow: var(--bg-shadow-gold) !important;
+  border: 0 !important;
+}
+.woocommerce-cart .coupon button[name="apply_coupon"]:hover {
+  background: linear-gradient(135deg, var(--bg-gold-300), var(--bg-gold-400)) !important;
+  transform: translateY(-2px);
+}
+
+/* Cart totals panel */
+.woocommerce-cart .cart_totals,
+.woocommerce-cart .cart-collaterals .cart_totals {
+  background: #ffffff !important;
+  border-radius: 24px !important;
+  padding: 28px !important;
+  box-shadow: 0 8px 28px rgba(53, 3, 97, 0.08) !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+}
+.woocommerce-cart .cart_totals h2 {
+  font-size: 20px !important;
+  font-weight: 800 !important;
+  color: var(--bg-ink-deep) !important;
+  margin: 0 0 20px 0 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+.woocommerce-cart .cart_totals table.shop_table {
+  border: 0 !important;
+  background: transparent !important;
+}
+.woocommerce-cart .cart_totals table th,
+.woocommerce-cart .cart_totals table td {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 10px 0 !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+.woocommerce-cart .cart_totals table tr.order-total th,
+.woocommerce-cart .cart_totals table tr.order-total td {
+  border-bottom: 0 !important;
+  padding-top: 18px !important;
+}
+.woocommerce-cart .cart_totals table tr.order-total .amount {
+  color: var(--bg-purple-700) !important;
+  font-size: 22px !important;
+  font-weight: 900 !important;
+}
+.woocommerce-cart .cart_totals .wc-proceed-to-checkout a.checkout-button {
+  background: linear-gradient(135deg, var(--bg-purple-700), var(--bg-purple-600)) !important;
+  color: #ffffff !important;
+  border-radius: 14px !important;
+  padding: 16px 24px !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+  width: 100% !important;
+  text-align: center !important;
+  display: block !important;
+  box-shadow: 0 12px 32px rgba(107, 17, 161, 0.30) !important;
+  margin-top: 16px !important;
+  transition: all 0.2s ease !important;
+}
+.woocommerce-cart .cart_totals .wc-proceed-to-checkout a.checkout-button:hover {
+  background: linear-gradient(135deg, var(--bg-purple-800), var(--bg-purple-700)) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(107, 17, 161, 0.40) !important;
+}
+
+
+/* ============================================================
+   12e. CHECKOUT PAGE
+   ============================================================ */
+.woocommerce-checkout .woocommerce {
+  font-family: var(--bg-font-sans), -apple-system, sans-serif;
+}
+
+.woocommerce-checkout .entry-title,
+.woocommerce-checkout h1.entry-title {
+  font-size: clamp(28px, 4vw, 36px) !important;
+  font-weight: 900 !important;
+  color: var(--bg-ink-deep) !important;
+  letter-spacing: -0.01em;
+}
+
+/* Coupon collapse link */
+.woocommerce-checkout .woocommerce-info,
+.woocommerce-checkout .woocommerce-form-coupon-toggle {
+  background: var(--bg-purple-50) !important;
+  border: 1px solid rgba(168, 85, 247, 0.2) !important;
+  border-left: 4px solid var(--bg-purple-600) !important;
+  border-radius: 12px !important;
+  color: var(--bg-ink-deep) !important;
+  padding: 14px 18px !important;
+}
+.woocommerce-checkout .woocommerce-info::before {
+  color: var(--bg-purple-600) !important;
+}
+.woocommerce-checkout .woocommerce-info a,
+.woocommerce-checkout .showcoupon {
+  color: var(--bg-purple-700) !important;
+  font-weight: 700 !important;
+}
+
+/* Section headings */
+.woocommerce-checkout #customer_details h3,
+.woocommerce-checkout .woocommerce-billing-fields h3,
+.woocommerce-checkout .woocommerce-shipping-fields h3,
+.woocommerce-checkout #order_review_heading {
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  color: var(--bg-ink-deep) !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  margin: 0 0 20px 0 !important;
+  padding-bottom: 12px !important;
+  border-bottom: 2px solid var(--bg-purple-100) !important;
+}
+
+/* Wrap each form group in a clean card */
+.woocommerce-checkout .woocommerce-billing-fields,
+.woocommerce-checkout .woocommerce-shipping-fields,
+.woocommerce-checkout .woocommerce-additional-fields {
+  background: #ffffff !important;
+  border-radius: 20px !important;
+  padding: 28px !important;
+  box-shadow: 0 4px 16px rgba(53, 3, 97, 0.06) !important;
+  margin-bottom: 24px !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Form labels */
+.woocommerce-checkout .form-row label {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #4b5563 !important;
+  margin-bottom: 6px !important;
+}
+.woocommerce-checkout .form-row .required {
+  color: var(--bg-purple-600) !important;
+  text-decoration: none !important;
+}
+
+/* Form inputs (checkout-specific) */
+.woocommerce-checkout .form-row input.input-text,
+.woocommerce-checkout .form-row textarea,
+.woocommerce-checkout .form-row .select2-selection {
+  border-radius: 12px !important;
+  border: 1px solid #e5e5e5 !important;
+  padding: 12px 16px !important;
+  height: auto !important;
+  background: #ffffff !important;
+  font-family: var(--bg-font-sans) !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+.woocommerce-checkout .form-row input.input-text:focus,
+.woocommerce-checkout .form-row textarea:focus {
+  border-color: var(--bg-purple-500) !important;
+  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.15) !important;
+  outline: none !important;
+}
+.woocommerce-checkout .select2-container--default .select2-selection--single {
+  border-radius: 12px !important;
+  border: 1px solid #e5e5e5 !important;
+  height: 48px !important;
+  padding: 8px 12px !important;
+}
+.woocommerce-checkout .select2-container--default .select2-selection--single .select2-selection__rendered {
+  line-height: 30px !important;
+  color: var(--bg-ink-deep) !important;
+}
+
+/* Order review panel — kill Woodmart's ticket-edge zigzag */
+.woocommerce-checkout #order_review,
+.woocommerce-checkout .woocommerce-checkout-review-order {
+  background: #ffffff !important;
+  border-radius: 20px !important;
+  padding: 28px !important;
+  box-shadow: 0 8px 28px rgba(53, 3, 97, 0.08) !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+  position: sticky;
+  top: 100px;
+}
+.woocommerce-checkout #order_review::before,
+.woocommerce-checkout #order_review::after,
+.woocommerce-checkout .woocommerce-checkout-review-order::before,
+.woocommerce-checkout .woocommerce-checkout-review-order::after {
+  display: none !important;
+  background: none !important;
+  content: none !important;
+}
+
+/* Order review table */
+.woocommerce-checkout #order_review table.shop_table,
+.woocommerce-checkout .woocommerce-checkout-review-order table {
+  border: 0 !important;
+  background: transparent !important;
+  margin-bottom: 16px !important;
+}
+.woocommerce-checkout #order_review table.shop_table thead th {
+  color: #6b7280 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+  padding: 10px 0 !important;
+}
+.woocommerce-checkout #order_review table.shop_table tbody tr td {
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04) !important;
+  padding: 12px 0 !important;
+  font-weight: 600 !important;
+  color: var(--bg-ink-deep) !important;
+}
+.woocommerce-checkout #order_review table.shop_table tfoot th,
+.woocommerce-checkout #order_review table.shop_table tfoot td {
+  background: transparent !important;
+  border: 0 !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
+  padding: 10px 0 !important;
+}
+.woocommerce-checkout #order_review table.shop_table tfoot tr.order-total th,
+.woocommerce-checkout #order_review table.shop_table tfoot tr.order-total td {
+  border-top: 2px solid var(--bg-purple-100) !important;
+  padding-top: 16px !important;
+}
+.woocommerce-checkout #order_review table.shop_table tfoot tr.order-total .amount {
+  color: var(--bg-purple-700) !important;
+  font-size: 22px !important;
+  font-weight: 900 !important;
+}
+
+/* Payment methods — selectable cards */
+.woocommerce-checkout #payment,
+.woocommerce-checkout .woocommerce-checkout-payment {
+  background: transparent !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+.woocommerce-checkout #payment ul.payment_methods,
+.woocommerce-checkout .wc_payment_methods {
+  border: 0 !important;
+  padding: 0 !important;
+  margin: 0 0 20px 0 !important;
+  list-style: none !important;
+}
+.woocommerce-checkout #payment ul.payment_methods li,
+.woocommerce-checkout .wc_payment_method {
+  background: #ffffff !important;
+  border: 2px solid rgba(0, 0, 0, 0.06) !important;
+  border-radius: 14px !important;
+  padding: 16px !important;
+  margin: 0 0 10px 0 !important;
+  list-style: none !important;
+  transition: border-color 0.2s ease, background 0.2s ease !important;
+}
+.woocommerce-checkout #payment ul.payment_methods li:hover {
+  border-color: var(--bg-purple-300) !important;
+  background: var(--bg-purple-50) !important;
+}
+.woocommerce-checkout #payment ul.payment_methods li input[type="radio"]:checked + label {
+  color: var(--bg-purple-700) !important;
+}
+.woocommerce-checkout #payment ul.payment_methods li:has(input:checked) {
+  border-color: var(--bg-purple-600) !important;
+  background: var(--bg-purple-50) !important;
+  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.10) !important;
+}
+.woocommerce-checkout #payment ul.payment_methods li label {
+  font-weight: 700 !important;
+  color: var(--bg-ink-deep) !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+.woocommerce-checkout #payment ul.payment_methods li .payment_box {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 12px 0 0 0 !important;
+  margin: 8px 0 0 0 !important;
+  color: #6b7280 !important;
+  font-size: 13px !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+.woocommerce-checkout #payment ul.payment_methods li .payment_box::before,
+.woocommerce-checkout #payment ul.payment_methods li .payment_box::after {
+  display: none !important;
+}
+
+/* Place order button */
+.woocommerce-checkout #place_order,
+.woocommerce-checkout button#place_order {
+  background: linear-gradient(135deg, var(--bg-purple-700), var(--bg-purple-600)) !important;
+  color: #ffffff !important;
+  border-radius: 16px !important;
+  padding: 18px 32px !important;
+  font-weight: 800 !important;
+  font-size: 16px !important;
+  width: 100% !important;
+  border: 0 !important;
+  box-shadow: 0 12px 32px rgba(107, 17, 161, 0.30) !important;
+  transition: all 0.2s ease !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  margin-top: 16px !important;
+}
+.woocommerce-checkout #place_order:hover {
+  background: linear-gradient(135deg, var(--bg-purple-800), var(--bg-purple-700)) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(107, 17, 161, 0.40) !important;
+}
+
+/* Terms checkbox */
+.woocommerce-checkout .woocommerce-terms-and-conditions-wrapper {
+  background: var(--bg-purple-50) !important;
+  border-radius: 12px !important;
+  padding: 14px 18px !important;
+  margin: 16px 0 !important;
+}
+.woocommerce-checkout .woocommerce-terms-and-conditions-wrapper a {
+  color: var(--bg-purple-700) !important;
+  font-weight: 600 !important;
+}
+
+/* "Ship to a different address" toggle */
+.woocommerce-checkout #ship-to-different-address label {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: var(--bg-ink-deep) !important;
 }
 
 /* ============================================================
