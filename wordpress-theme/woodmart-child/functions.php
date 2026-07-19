@@ -537,42 +537,6 @@ function bg_pcard_labels($product_id) {
 }
 
 /**
- * Turn a product's short description into a plain-text excerpt
- * for the card.
- *
- * Catalog short descriptions are HTML lists carrying inline
- * colour styles and a boilerplate lead-in ("Product Info:",
- * "Rip It Live Information:"). Strips the markup, drops the
- * lead-in label, and truncates on a word boundary.
- */
-function bg_pcard_excerpt($product, $length = 110) {
-    $raw = $product->get_short_description();
-    if ($raw === '') {
-        $raw = $product->get_description();
-    }
-    if ($raw === '') return '';
-
-    $text = wp_strip_all_tags(str_replace(['<br>', '<br />', '</li>'], ' ', $raw));
-    $text = html_entity_decode($text, ENT_QUOTES, 'UTF-8');
-    $text = trim(preg_replace('/\s+/u', ' ', $text));
-
-    // Strip a leading "Something Info:" / "Something Information:"
-    // label so the excerpt opens on real content.
-    $text = preg_replace('/^[^:]{0,40}Info(rmation)?\s*:\s*/iu', '', $text);
-    $text = trim($text);
-
-    if (function_exists('mb_strlen') ? mb_strlen($text) <= $length : strlen($text) <= $length) {
-        return $text;
-    }
-    $cut = function_exists('mb_substr') ? mb_substr($text, 0, $length) : substr($text, 0, $length);
-    $sp  = function_exists('mb_strrpos') ? mb_strrpos($cut, ' ') : strrpos($cut, ' ');
-    if ($sp > 40) {
-        $cut = function_exists('mb_substr') ? mb_substr($cut, 0, $sp) : substr($cut, 0, $sp);
-    }
-    return rtrim($cut, " ,.;:-") . '…';
-}
-
-/**
  * Shortcode: [bg_new_arrivals]
  *
  * Renders the New Arrivals product grid for the homepage.
@@ -654,8 +618,7 @@ add_shortcode('bg_new_arrivals', function ($atts) {
             $image = wc_placeholder_img_src('medium');
         }
 
-        $labels  = bg_pcard_labels($pid);
-        $excerpt = bg_pcard_excerpt($product);
+        $labels = bg_pcard_labels($pid);
 
         // Meta line pairs the game with the print language —
         // the catalog carries no condition attribute, and for
@@ -723,9 +686,6 @@ add_shortcode('bg_new_arrivals', function ($atts) {
                 </h3>
                 <?php if ($meta_line): ?>
                     <p class="bg-pcard__meta"><?php echo esc_html($meta_line); ?></p>
-                <?php endif; ?>
-                <?php if ($excerpt): ?>
-                    <p class="bg-pcard__excerpt"><?php echo esc_html($excerpt); ?></p>
                 <?php endif; ?>
 
                 <div class="bg-pcard__foot">

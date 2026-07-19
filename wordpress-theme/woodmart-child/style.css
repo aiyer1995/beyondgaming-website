@@ -2008,7 +2008,7 @@ body.home .elementor-location-single > *:first-child {
                           uniform canvas instead of white voids
        __type             product type chip (child category)
        __stock            in/low stock pill
-     .bg-pcard__body      title, meta, excerpt, price + CTA
+     .bg-pcard__body      title, meta, price + CTA
 
    .bg-product-card above is the older card and is still used by
    [bg_related_products]; it is deliberately left untouched.
@@ -2149,17 +2149,7 @@ body.home .elementor-location-single > *:first-child {
   font-size: 12px;
   font-weight: 600;
   color: #6b7280;
-  margin: 0 0 8px;
-}
-.bg-pcard__excerpt {
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: #6b7280;
   margin: 0 0 14px;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 .bg-pcard__foot {
@@ -2168,7 +2158,7 @@ body.home .elementor-location-single > *:first-child {
   justify-content: space-between;
   gap: 10px;
   /* Pinned to the bottom so price rows line up across a row of
-     cards whose titles and excerpts differ in length. */
+     cards whose titles differ in length. */
   margin-top: auto;
   padding-top: 12px;
   border-top: 1.5px dashed rgba(53, 3, 97, 0.22);
@@ -2229,9 +2219,6 @@ body.home .elementor-location-single > *:first-child {
   .bg-pcard__bar { font-size: 10px; padding: 7px 11px; }
   .bg-pcard__body { padding: 12px 12px 14px; }
   .bg-pcard__title { font-size: 13.5px; }
-  /* The excerpt is the first thing to go when cards get narrow —
-     title, price and CTA matter more at this width. */
-  .bg-pcard__excerpt { display: none; }
   .bg-pcard__foot { flex-direction: column; align-items: stretch; gap: 8px; }
   .bg-pcard__price { font-size: 16px; }
   .bg-pcard__cta { justify-content: center; }
