@@ -23,12 +23,12 @@ $shop_links = [
     ['/product-category/dragonball-tcg/',       'Dragonball TCG'],
     ['/product-category/supplies/',             'Supplies'],
     ['/product-category/toys-collectibles/',    'Collectibles'],
+    ['/shop',                                   'All Products'],
 ];
 
 $company_links = [
     ['/about',                       'About Us'],
     ['/contact',                     'Contact'],
-    ['/shop',                        'All Products'],
     ['/terms-conditions',            'Terms & Conditions'],
     ['/privacy-policy',              'Privacy Policy'],
     ['/shipping-delivery-policy',    'Shipping Policy'],
