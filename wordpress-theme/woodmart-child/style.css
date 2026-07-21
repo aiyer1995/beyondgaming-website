@@ -2215,19 +2215,54 @@ body.home .elementor-location-single > *:first-child {
   padding-top: 12px;
   border-top: 1.5px dashed rgba(53, 3, 97, 0.22);
 }
+/* Same treatment as .bg-product-page__price: Geist 900 with the
+   purple gradient clipped to the glyphs, so the price on a card
+   and the price on the product page read as one thing. */
 .bg-pcard__price {
-  font-size: 18px;
+  font-family: var(--bg-font-sans);
+  font-size: 19px;
   font-weight: 900;
-  color: var(--bg-purple-900);
   line-height: 1.2;
+  letter-spacing: -0.01em;
+  background: linear-gradient(135deg, #9215ad, #6b11a1, #a855f7);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
+.bg-pcard__price ins {
+  text-decoration: none;
+  font-weight: 900;
+  background: linear-gradient(135deg, #9215ad, #6b11a1, #a855f7);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+/* The struck-through original opts back out of the gradient --
+   text-fill-color has to be reset explicitly or it inherits
+   transparent and the number vanishes. */
 .bg-pcard__price del {
   display: block;
-  color: #9ca3af;
-  font-weight: 500;
   font-size: 12px;
+  font-weight: 500;
+  background: none;
+  color: #9ca3af;
+  -webkit-text-fill-color: #9ca3af;
 }
-.bg-pcard__price ins { text-decoration: none; }
+/* WooCommerce wraps every amount in its own spans, which would
+   otherwise paint their own colour over the clipped gradient. */
+.bg-pcard__price .amount,
+.bg-pcard__price .woocommerce-Price-amount,
+.bg-pcard__price bdi,
+.bg-pcard__price .woocommerce-Price-currencySymbol {
+  color: inherit;
+  font: inherit;
+  background: inherit;
+  -webkit-background-clip: inherit;
+          background-clip: inherit;
+  -webkit-text-fill-color: inherit;
+}
 
 .bg-pcard__cta {
   position: relative;
