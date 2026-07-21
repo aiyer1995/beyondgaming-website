@@ -613,10 +613,32 @@ add_shortcode('bg_new_arrivals', function ($atts) {
         $pid       = get_the_ID();
         $permalink = get_permalink();
         $title     = get_the_title();
+        // The blurred backdrop is only ever seen out of focus, so
+        // the 300px 'medium' file is plenty and keeps it cheap.
         $image     = get_the_post_thumbnail_url($pid, 'medium');
         if (!$image) {
             $image = wc_placeholder_img_src('medium');
         }
+        // The foreground image is a different problem: the well is
+        // ~250-330 CSS px, which is 500-660 real pixels on a retina
+        // screen, so a 300px file renders visibly soft. Hand it to
+        // wp_get_attachment_image() off the full size instead — it
+        // builds a srcset from every registered size that shares the
+        // original's aspect ratio (so no hard-cropped variants sneak
+        // in) and the sizes hint below, which mirrors the grid, lets
+        // the browser pick the smallest file that still looks sharp.
+        $thumb_id  = get_post_thumbnail_id($pid);
+
+        // A cut-out product shot on a transparent background lets the
+        // blurred backdrop bleed through the subject, which reads as
+        // grubby rather than atmospheric. Those images want flat white
+        // instead. Deciding it properly means decoding the file to look
+        // for a populated alpha channel, which is far too expensive per
+        // card, so go by format: JPEG cannot carry alpha, everything
+        // else might. Opaque PNGs get white too, but they are almost
+        // always packshots already sitting on white, so that is the
+        // right answer for them anyway.
+        $flat_bg = !in_array(get_post_mime_type($thumb_id), ['image/jpeg', 'image/jpg'], true);
 
         $labels = bg_pcard_labels($pid);
 
@@ -668,12 +690,24 @@ add_shortcode('bg_new_arrivals', function ($atts) {
                 </div>
             <?php endif; ?>
 
-            <div class="bg-pcard__media">
-                <span class="bg-pcard__backdrop"
-                      style="background-image:url('<?php echo esc_url($image); ?>')"
-                      aria-hidden="true"></span>
-                <img class="bg-pcard__img" src="<?php echo esc_url($image); ?>"
-                     alt="<?php echo esc_attr($title); ?>" loading="lazy" />
+            <div class="bg-pcard__media<?php echo $flat_bg ? ' bg-pcard__media--flat' : ''; ?>">
+                <?php if (!$flat_bg): ?>
+                    <span class="bg-pcard__backdrop"
+                          style="background-image:url('<?php echo esc_url($image); ?>')"
+                          aria-hidden="true"></span>
+                <?php endif; ?>
+                <?php if ($thumb_id): ?>
+                    <?php echo wp_get_attachment_image($thumb_id, 'full', false, [
+                        'class'   => 'bg-pcard__img',
+                        'alt'     => $title,
+                        'loading' => 'lazy',
+                        // Matches .bg-new-arrivals-grid: 2-up, 3-up, 4-up.
+                        'sizes'   => '(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw',
+                    ]); ?>
+                <?php else: ?>
+                    <img class="bg-pcard__img" src="<?php echo esc_url($image); ?>"
+                         alt="<?php echo esc_attr($title); ?>" loading="lazy" />
+                <?php endif; ?>
                 <span class="bg-pcard__stock <?php echo esc_attr($stock_class); ?>">
                     <span class="bg-pcard__stock-dot"></span>
                     <?php echo esc_html($stock_label); ?>

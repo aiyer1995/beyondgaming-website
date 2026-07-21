@@ -2085,6 +2085,12 @@ body.home .elementor-location-single > *:first-child {
   background: var(--bg-purple-50);
   border-bottom: 2px solid var(--bg-purple-900);
 }
+/* Formats that can carry an alpha channel skip the backdrop and
+   sit on flat white, so a cut-out subject never has blur showing
+   through it. Set in PHP off the attachment mime type. */
+.bg-pcard__media--flat {
+  background: #ffffff;
+}
 .bg-pcard__backdrop {
   position: absolute;
   inset: -12%;
