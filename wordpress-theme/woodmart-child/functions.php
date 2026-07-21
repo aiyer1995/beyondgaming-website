@@ -598,10 +598,6 @@ add_shortcode('bg_new_arrivals', function ($atts) {
         return '';
     }
 
-    // Global low-stock threshold (WC setting), used as fallback
-    // when a product doesn't have its own _low_stock_amount.
-    $global_low_threshold = (int) get_option('woocommerce_notify_low_stock_amount', 2);
-
     ob_start();
     ?>
     <div class="bg-new-arrivals-grid">
@@ -610,57 +606,101 @@ add_shortcode('bg_new_arrivals', function ($atts) {
         $query->the_post();
         global $product;
         if (!$product) continue;
-        $pid       = get_the_ID();
-        $permalink = get_permalink();
-        $title     = get_the_title();
-        // The blurred backdrop is only ever seen out of focus, so
-        // the 300px 'medium' file is plenty and keeps it cheap.
-        $image     = get_the_post_thumbnail_url($pid, 'medium');
-        if (!$image) {
-            $image = wc_placeholder_img_src('medium');
-        }
-        // The foreground image is a different problem: the well is
-        // ~250-330 CSS px, which is 500-660 real pixels on a retina
-        // screen, so a 300px file renders visibly soft. Hand it to
-        // wp_get_attachment_image() off the full size instead — it
-        // builds a srcset from every registered size that shares the
-        // original's aspect ratio (so no hard-cropped variants sneak
-        // in) and the sizes hint below, which mirrors the grid, lets
-        // the browser pick the smallest file that still looks sharp.
-        $thumb_id  = get_post_thumbnail_id($pid);
+        bg_render_pcard($product);
+    }
+    wp_reset_postdata();
+    ?>
+    </div>
+    <?php
+    return ob_get_clean();
+});
 
-        // A cut-out product shot on a transparent background lets the
-        // blurred backdrop bleed through the subject, which reads as
-        // grubby rather than atmospheric. Those images want flat white
-        // instead. Deciding it properly means decoding the file to look
-        // for a populated alpha channel, which is far too expensive per
-        // card, so go by format: JPEG cannot carry alpha, everything
-        // else might. Opaque PNGs get white too, but they are almost
-        // always packshots already sitting on white, so that is the
-        // right answer for them anyway.
-        $flat_bg = !in_array(get_post_mime_type($thumb_id), ['image/jpeg', 'image/jpg'], true);
+/**
+ * Renders one .bg-pcard.
+ *
+ * Single source of truth for the card, shared by [bg_new_arrivals],
+ * [bg_recently_viewed] and the WooCommerce loop template at
+ * woocommerce/content-product.php. Echoes rather than returns, so
+ * callers buffer it themselves.
+ *
+ * @param WC_Product $product
+ * @param string     $sizes   Value for the image sizes attribute.
+ *                            Defaults to the 2/3/4-up grid that all
+ *                            three callers lay out.
+ */
+function bg_render_pcard($product, $sizes = '(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw') {
+    if (!$product instanceof WC_Product) {
+        return;
+    }
 
-        $labels = bg_pcard_labels($pid);
+    // Global low-stock threshold (WC setting), used as fallback when
+    // a product carries no _low_stock_amount of its own. Read once —
+    // this runs for every card on the page.
+    static $global_low_threshold = null;
+    if ($global_low_threshold === null) {
+        $global_low_threshold = (int) get_option('woocommerce_notify_low_stock_amount', 2);
+    }
 
-        // Meta line pairs the game with the print language —
-        // the catalog carries no condition attribute, and for
-        // sealed product the language is the useful signal.
-        $meta_bits = array_filter([$labels['game'], $labels['language']]);
-        $meta_line = implode(' · ', $meta_bits);
+    $pid       = $product->get_id();
+    $permalink = get_permalink($pid);
+    $title     = get_the_title($pid);
+    // The blurred backdrop is only ever seen out of focus, so
+    // the 300px 'medium' file is plenty and keeps it cheap.
+    $image     = get_the_post_thumbnail_url($pid, 'medium');
+    if (!$image) {
+        $image = wc_placeholder_img_src('medium');
+    }
+    // The foreground image is a different problem: the well is
+    // ~250-330 CSS px, which is 500-660 real pixels on a retina
+    // screen, so a 300px file renders visibly soft. Hand it to
+    // wp_get_attachment_image() off the full size instead — it
+    // builds a srcset from every registered size that shares the
+    // original's aspect ratio (so no hard-cropped variants sneak
+    // in) and the sizes hint below, which mirrors the grid, lets
+    // the browser pick the smallest file that still looks sharp.
+    $thumb_id  = get_post_thumbnail_id($pid);
 
-        // Build price HTML manually with wc_price() — bypasses
-        // the woocommerce_get_price_html filter that Woodmart
-        // hooks to append stock status, which would otherwise
-        // duplicate the stock indicator I render below.
-        $regular = $product->get_regular_price();
-        $sale    = $product->get_sale_price();
-        if ($sale !== '' && $sale < $regular) {
-            $price_html = '<del>' . wc_price($regular) . '</del> <ins>' . wc_price($sale) . '</ins>';
-        } else {
-            $price_html = wc_price($product->get_price());
-        }
+    // A cut-out product shot on a transparent background lets the
+    // blurred backdrop bleed through the subject, which reads as
+    // grubby rather than atmospheric. Those images want flat white
+    // instead. Deciding it properly means decoding the file to look
+    // for a populated alpha channel, which is far too expensive per
+    // card, so go by format: JPEG cannot carry alpha, everything
+    // else might. Opaque PNGs get white too, but they are almost
+    // always packshots already sitting on white, so that is the
+    // right answer for them anyway.
+    $flat_bg = !in_array(get_post_mime_type($thumb_id), ['image/jpeg', 'image/jpg'], true);
 
-        // Compute stock label: "Low Stock" or "In Stock"
+    $labels = bg_pcard_labels($pid);
+
+    // Meta line pairs the game with the print language —
+    // the catalog carries no condition attribute, and for
+    // sealed product the language is the useful signal.
+    $meta_bits = array_filter([$labels['game'], $labels['language']]);
+    $meta_line = implode(' · ', $meta_bits);
+
+    // Build price HTML manually with wc_price() — bypasses
+    // the woocommerce_get_price_html filter that Woodmart
+    // hooks to append stock status, which would otherwise
+    // duplicate the stock indicator I render below.
+    $regular = $product->get_regular_price();
+    $sale    = $product->get_sale_price();
+    if ($sale !== '' && $sale < $regular) {
+        $price_html = '<del>' . wc_price($regular) . '</del> <ins>' . wc_price($sale) . '</ins>';
+    } else {
+        $price_html = wc_price($product->get_price());
+    }
+
+    // Stock label. [bg_new_arrivals] filters to in-stock products,
+    // but the shop archives and the related-products grid do not, so
+    // the sold-out and backorder states have to be handled here too.
+    if (!$product->is_in_stock()) {
+        $stock_label = 'Sold Out';
+        $stock_class = 'bg-pcard__stock--out';
+    } elseif ($product->is_on_backorder()) {
+        $stock_label = 'Backorder';
+        $stock_class = 'bg-pcard__stock--low';
+    } else {
         $stock_label = 'In Stock';
         $stock_class = 'bg-pcard__stock--in';
         if ($product->managing_stock()) {
@@ -672,86 +712,80 @@ add_shortcode('bg_new_arrivals', function ($atts) {
                 $stock_class = 'bg-pcard__stock--low';
             }
         }
+    }
 
-        // Simple in-stock products get WooCommerce's native AJAX
-        // add-to-cart; anything variable or unpurchasable falls
-        // back to a link through to the product page.
-        $ajax_cart = $product->is_type('simple')
-            && $product->is_purchasable()
-            && $product->is_in_stock();
-        ?>
-        <article class="bg-pcard">
-            <?php if ($labels['game']): ?>
-                <div class="bg-pcard__bar">
-                    <span class="bg-pcard__game"><?php echo esc_html($labels['game']); ?></span>
-                    <?php if ($labels['type']): ?>
-                        <span class="bg-pcard__type">/ <?php echo esc_html($labels['type']); ?></span>
-                    <?php endif; ?>
-                </div>
+    // Simple in-stock products get WooCommerce's native AJAX
+    // add-to-cart; anything variable or unpurchasable falls
+    // back to a link through to the product page.
+    $ajax_cart = $product->is_type('simple')
+        && $product->is_purchasable()
+        && $product->is_in_stock();
+    ?>
+    <article class="bg-pcard<?php echo $product->is_in_stock() ? '' : ' bg-pcard--out'; ?>">
+        <?php if ($labels['game']): ?>
+            <div class="bg-pcard__bar">
+                <span class="bg-pcard__game"><?php echo esc_html($labels['game']); ?></span>
+                <?php if ($labels['type']): ?>
+                    <span class="bg-pcard__type">/ <?php echo esc_html($labels['type']); ?></span>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+
+        <div class="bg-pcard__media<?php echo $flat_bg ? ' bg-pcard__media--flat' : ''; ?>">
+            <?php if (!$flat_bg): ?>
+                <span class="bg-pcard__backdrop"
+                      style="background-image:url('<?php echo esc_url($image); ?>')"
+                      aria-hidden="true"></span>
+            <?php endif; ?>
+            <?php if ($thumb_id): ?>
+                <?php echo wp_get_attachment_image($thumb_id, 'full', false, [
+                    'class'   => 'bg-pcard__img',
+                    'alt'     => $title,
+                    'loading' => 'lazy',
+                    'sizes'   => $sizes,
+                ]); ?>
+            <?php else: ?>
+                <img class="bg-pcard__img" src="<?php echo esc_url($image); ?>"
+                     alt="<?php echo esc_attr($title); ?>" loading="lazy" />
+            <?php endif; ?>
+            <span class="bg-pcard__stock <?php echo esc_attr($stock_class); ?>">
+                <span class="bg-pcard__stock-dot"></span>
+                <?php echo esc_html($stock_label); ?>
+            </span>
+        </div>
+
+        <div class="bg-pcard__body">
+            <h3 class="bg-pcard__title">
+                <a class="bg-pcard__link" href="<?php echo esc_url($permalink); ?>">
+                    <?php echo esc_html($title); ?>
+                </a>
+            </h3>
+            <?php if ($meta_line): ?>
+                <p class="bg-pcard__meta"><?php echo esc_html($meta_line); ?></p>
             <?php endif; ?>
 
-            <div class="bg-pcard__media<?php echo $flat_bg ? ' bg-pcard__media--flat' : ''; ?>">
-                <?php if (!$flat_bg): ?>
-                    <span class="bg-pcard__backdrop"
-                          style="background-image:url('<?php echo esc_url($image); ?>')"
-                          aria-hidden="true"></span>
-                <?php endif; ?>
-                <?php if ($thumb_id): ?>
-                    <?php echo wp_get_attachment_image($thumb_id, 'full', false, [
-                        'class'   => 'bg-pcard__img',
-                        'alt'     => $title,
-                        'loading' => 'lazy',
-                        // Matches .bg-new-arrivals-grid: 2-up, 3-up, 4-up.
-                        'sizes'   => '(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw',
-                    ]); ?>
-                <?php else: ?>
-                    <img class="bg-pcard__img" src="<?php echo esc_url($image); ?>"
-                         alt="<?php echo esc_attr($title); ?>" loading="lazy" />
-                <?php endif; ?>
-                <span class="bg-pcard__stock <?php echo esc_attr($stock_class); ?>">
-                    <span class="bg-pcard__stock-dot"></span>
-                    <?php echo esc_html($stock_label); ?>
-                </span>
-            </div>
-
-            <div class="bg-pcard__body">
-                <h3 class="bg-pcard__title">
-                    <a class="bg-pcard__link" href="<?php echo esc_url($permalink); ?>">
-                        <?php echo esc_html($title); ?>
+            <div class="bg-pcard__foot">
+                <span class="bg-pcard__price"><?php echo wp_kses_post($price_html); ?></span>
+                <?php if ($ajax_cart): ?>
+                    <a href="<?php echo esc_url($product->add_to_cart_url()); ?>"
+                       class="bg-pcard__cta add_to_cart_button ajax_add_to_cart"
+                       data-product_id="<?php echo esc_attr($pid); ?>"
+                       data-quantity="1"
+                       data-product_sku="<?php echo esc_attr($product->get_sku()); ?>"
+                       rel="nofollow"
+                       aria-label="<?php echo esc_attr('Add ' . $title . ' to cart'); ?>">
+                        <?php echo esc_html__('Add', 'beyondgaming'); ?>
                     </a>
-                </h3>
-                <?php if ($meta_line): ?>
-                    <p class="bg-pcard__meta"><?php echo esc_html($meta_line); ?></p>
+                <?php else: ?>
+                    <a href="<?php echo esc_url($permalink); ?>" class="bg-pcard__cta">
+                        <?php echo esc_html__('View', 'beyondgaming'); ?>
+                    </a>
                 <?php endif; ?>
-
-                <div class="bg-pcard__foot">
-                    <span class="bg-pcard__price"><?php echo wp_kses_post($price_html); ?></span>
-                    <?php if ($ajax_cart): ?>
-                        <a href="<?php echo esc_url($product->add_to_cart_url()); ?>"
-                           class="bg-pcard__cta add_to_cart_button ajax_add_to_cart"
-                           data-product_id="<?php echo esc_attr($pid); ?>"
-                           data-quantity="1"
-                           data-product_sku="<?php echo esc_attr($product->get_sku()); ?>"
-                           rel="nofollow"
-                           aria-label="<?php echo esc_attr('Add ' . $title . ' to cart'); ?>">
-                            <?php echo esc_html__('Add', 'beyondgaming'); ?>
-                        </a>
-                    <?php else: ?>
-                        <a href="<?php echo esc_url($permalink); ?>" class="bg-pcard__cta">
-                            <?php echo esc_html__('View', 'beyondgaming'); ?>
-                        </a>
-                    <?php endif; ?>
-                </div>
             </div>
-        </article>
-        <?php
-    }
-    wp_reset_postdata();
-    ?>
-    </div>
+        </div>
+    </article>
     <?php
-    return ob_get_clean();
-});
+}
 
 /**
  * Shortcode: [bg_product_description]
@@ -1646,8 +1680,6 @@ add_shortcode('bg_recently_viewed', function ($atts) {
         return '';
     }
 
-    $global_low_threshold = (int) get_option('woocommerce_notify_low_stock_amount', 2);
-
     ob_start();
     ?>
     <section class="bg-related-products">
@@ -1664,53 +1696,7 @@ add_shortcode('bg_recently_viewed', function ($atts) {
             global $product;
             if (!$product instanceof WC_Product) continue;
 
-            $permalink = get_permalink();
-            $title     = get_the_title();
-            $image     = get_the_post_thumbnail_url(get_the_ID(), 'medium');
-            if (!$image) {
-                $image = wc_placeholder_img_src('medium');
-            }
-
-            // Brand price markup (skip get_price_html filter so
-            // Woodmart doesn't append a duplicate stock label)
-            $regular = $product->get_regular_price();
-            $sale    = $product->get_sale_price();
-            if ($sale !== '' && $sale !== null && (float) $sale < (float) $regular) {
-                $price_html = '<del>' . wc_price($regular) . '</del> <ins>' . wc_price($sale) . '</ins>';
-            } else {
-                $price_html = wc_price($product->get_price());
-            }
-
-            // Stock label
-            $stock_label = 'In Stock';
-            $stock_class = 'bg-product-card__stock--in';
-            if (!$product->is_in_stock()) {
-                $stock_label = 'Out of Stock';
-                $stock_class = 'bg-product-card__stock--out';
-            } elseif ($product->managing_stock()) {
-                $qty = (int) $product->get_stock_quantity();
-                $product_low = (int) $product->get_low_stock_amount();
-                $threshold = $product_low > 0 ? $product_low : $global_low_threshold;
-                if ($qty > 0 && $qty <= $threshold) {
-                    $stock_label = 'Low Stock';
-                    $stock_class = 'bg-product-card__stock--low';
-                }
-            }
-            ?>
-            <a href="<?php echo esc_url($permalink); ?>" class="bg-product-card">
-                <div class="bg-product-card__image">
-                    <img src="<?php echo esc_url($image); ?>" alt="<?php echo esc_attr($title); ?>" loading="lazy" />
-                </div>
-                <div class="bg-product-card__body">
-                    <h3 class="bg-product-card__title"><?php echo esc_html($title); ?></h3>
-                    <p class="bg-product-card__price"><?php echo wp_kses_post($price_html); ?></p>
-                    <div class="bg-product-card__stock <?php echo esc_attr($stock_class); ?>">
-                        <span class="bg-product-card__stock-dot"></span>
-                        <?php echo esc_html($stock_label); ?>
-                    </div>
-                </div>
-            </a>
-            <?php
+            bg_render_pcard($product);
         }
         wp_reset_postdata();
         ?>

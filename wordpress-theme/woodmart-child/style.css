@@ -288,6 +288,34 @@ button[type="submit"].single_add_to_cart_button:hover {
   box-shadow: var(--bg-shadow-purple);
 }
 
+/* woocommerce/content-product.php renders a .bg-pcard inside the
+   wrapper above, which keeps Woodmart's classes so the grid and
+   their AJAX scripts still work. The wrapper must then stop being
+   a card itself, or every product sits in a card inside a card
+   with two shadows and two hover lifts. The .bg-pcard owns all of
+   it; the wrapper becomes a bare grid cell. */
+.wd-product.bg-pcard-cell,
+.product-grid-item.bg-pcard-cell,
+.woocommerce ul.products li.product.bg-pcard-cell {
+  border-radius: 0 !important;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+  transition: none;
+  padding: 0;
+}
+.wd-product.bg-pcard-cell:hover,
+.product-grid-item.bg-pcard-cell:hover,
+.woocommerce ul.products li.product.bg-pcard-cell:hover {
+  transform: none;
+  box-shadow: none;
+}
+/* The card fills the cell so a row of them lines up regardless of
+   how many lines each title wraps to. */
+.bg-pcard-cell > .bg-pcard {
+  height: 100%;
+}
+
 .product-grid-item .product-image-link,
 .wd-product .product-image-link,
 .woocommerce ul.products li.product a img {
@@ -2012,8 +2040,12 @@ body.home .elementor-location-single > *:first-child {
        __stock            in/low stock pill
      .bg-pcard__body      title, meta, price + CTA
 
-   .bg-product-card above is the older card and is still used by
-   [bg_recently_viewed]; it is deliberately left untouched.
+   Rendered by bg_render_pcard() in functions.php, which backs
+   [bg_new_arrivals], [bg_recently_viewed] and the shop/category/
+   search loop via woocommerce/content-product.php.
+
+   .bg-product-card above is the older card. Nothing in the product
+   grids uses it any more; it is kept for the membership tiers.
    ============================================================ */
 .bg-pcard {
   position: relative;
@@ -2137,6 +2169,11 @@ body.home .elementor-location-single > *:first-child {
 .bg-pcard__stock--in .bg-pcard__stock-dot { background: #10b981; }
 .bg-pcard__stock--low { color: #b45309; }
 .bg-pcard__stock--low .bg-pcard__stock-dot { background: #f59e0b; }
+.bg-pcard__stock--out { color: #9f1239; }
+.bg-pcard__stock--out .bg-pcard__stock-dot { background: #e11d48; }
+/* A sold-out product should not compete with the ones that can
+   actually be bought, so mute the image without hiding it. */
+.bg-pcard--out .bg-pcard__media { opacity: 0.62; }
 
 .bg-pcard__body {
   display: flex;
