@@ -2021,14 +2021,14 @@ body.home .elementor-location-single > *:first-child {
   border: 2px solid var(--bg-purple-900);
   border-radius: 20px;
   overflow: hidden;
-  /* Solid offset shadow — the brutalist cue from the reference,
-     in brand purple rather than black. */
-  box-shadow: 5px 5px 0 var(--bg-purple-900);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  /* Same soft shadow and lift as the Woodmart shop-page cards
+     (section 6) so hover feels identical across the site. */
+  box-shadow: var(--bg-shadow-soft);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 .bg-pcard:hover {
-  transform: translate(-3px, -3px);
-  box-shadow: 8px 8px 0 var(--bg-purple-900);
+  transform: translateY(-4px);
+  box-shadow: var(--bg-shadow-purple);
 }
 /* Whole card is clickable via the stretched title link, while
    the CTA button stays independently clickable above it. */
@@ -2201,7 +2201,7 @@ body.home .elementor-location-single > *:first-child {
   background: linear-gradient(135deg, var(--bg-gold-300), var(--bg-gold-400));
   color: var(--bg-ink-deep);
   transform: translateY(-1px);
-  box-shadow: 0 3px 0 var(--bg-purple-900);
+  box-shadow: 0 4px 10px rgba(53, 3, 97, 0.22);
 }
 /* WooCommerce toggles these while the AJAX request is in flight
    and after it resolves. */
@@ -2215,7 +2215,6 @@ body.home .elementor-location-single > *:first-child {
 .bg-pcard__foot .added_to_cart { display: none; }
 
 @media (max-width: 639px) {
-  .bg-pcard { box-shadow: 3px 3px 0 var(--bg-purple-900); }
   .bg-pcard__bar { font-size: 10px; padding: 7px 11px; }
   .bg-pcard__body { padding: 12px 12px 14px; }
   .bg-pcard__title { font-size: 13.5px; }
