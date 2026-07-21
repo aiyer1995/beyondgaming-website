@@ -1995,13 +1995,14 @@ body.home .elementor-location-single > *:first-child {
 
 /* ─── 2b. PRODUCT CARD v2 (.bg-pcard) ───────────────────────
    Used by [bg_new_arrivals]. Takes the confident, high-contrast
-   structure of the reference layout — hard border, solid (un-
-   blurred) offset shadow, a category bar across the top — but
-   renders it in the Beyond Gaming palette and keeps the 20px
-   radius used everywhere else on the site.
+   structure of the reference layout — hard border, a category
+   bar across the top — but renders it in the Beyond Gaming
+   palette, keeps the 20px radius used everywhere else, and
+   borrows the shop-page cards' soft shadow and hover lift so
+   the two grids behave the same.
 
    Anatomy:
-     .bg-pcard__bar       purple bar, parent game category
+     .bg-pcard__bar       purple gradient bar, parent game category
      .bg-pcard__media     square image well
        __backdrop         blurred zoom of the same image, so
                           inconsistent product photos sit on a
@@ -2040,7 +2041,10 @@ body.home .elementor-location-single > *:first-child {
 }
 
 .bg-pcard__bar {
-  background: var(--bg-purple-900);
+  /* Same 135deg brand gradient used on buttons and section
+     headers, but anchored at purple-900 so the gold text keeps
+     its contrast across the whole strip. */
+  background: linear-gradient(135deg, var(--bg-purple-900), var(--bg-purple-700));
   color: var(--bg-gold-400);
   font-size: 11px;
   font-weight: 800;
