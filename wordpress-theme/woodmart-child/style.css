@@ -2046,29 +2046,34 @@ body.home .elementor-location-single > *:first-child {
      headers, but anchored at purple-900 so the gold text keeps
      its contrast across the whole strip. */
   background: linear-gradient(135deg, var(--bg-purple-900), var(--bg-purple-700));
-  color: var(--bg-gold-400);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 9px 14px;
+  padding: 8px 14px 9px;
   /* Two labels on one line: the game reads gold and always fits,
      the type reads white and gives up characters first. Every
      current type name fits at 4-up; this is for narrower columns
      and for whatever gets added to the taxonomy later. */
   display: flex;
   align-items: baseline;
-  gap: 6px;
+  gap: 7px;
   white-space: nowrap;
   overflow: hidden;
 }
 .bg-pcard__game {
   flex: 0 0 auto;
+  /* Same treatment as the "New Arrivals" section heading -- Geist
+     at weight 900, title case, near-normal tracking -- just scaled
+     down to card size. Reads as a heading rather than a tag. */
+  color: var(--bg-gold-400);
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
 }
 .bg-pcard__type {
   min-width: 0;
   color: #ffffff;
+  font-size: 10px;
   font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -2219,7 +2224,9 @@ body.home .elementor-location-single > *:first-child {
 .bg-pcard__foot .added_to_cart { display: none; }
 
 @media (max-width: 639px) {
-  .bg-pcard__bar { font-size: 10px; padding: 7px 11px; }
+  .bg-pcard__bar { padding: 7px 11px 8px; gap: 6px; }
+  .bg-pcard__game { font-size: 13px; }
+  .bg-pcard__type { font-size: 9px; letter-spacing: 0.08em; }
   .bg-pcard__body { padding: 12px 12px 14px; }
   .bg-pcard__title { font-size: 13.5px; }
   .bg-pcard__foot { flex-direction: column; align-items: stretch; gap: 8px; }
