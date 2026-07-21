@@ -660,7 +660,12 @@ add_shortcode('bg_new_arrivals', function ($atts) {
         ?>
         <article class="bg-pcard">
             <?php if ($labels['game']): ?>
-                <div class="bg-pcard__bar"><?php echo esc_html($labels['game']); ?></div>
+                <div class="bg-pcard__bar">
+                    <span class="bg-pcard__game"><?php echo esc_html($labels['game']); ?></span>
+                    <?php if ($labels['type']): ?>
+                        <span class="bg-pcard__type">/ <?php echo esc_html($labels['type']); ?></span>
+                    <?php endif; ?>
+                </div>
             <?php endif; ?>
 
             <div class="bg-pcard__media">
@@ -669,9 +674,6 @@ add_shortcode('bg_new_arrivals', function ($atts) {
                       aria-hidden="true"></span>
                 <img class="bg-pcard__img" src="<?php echo esc_url($image); ?>"
                      alt="<?php echo esc_attr($title); ?>" loading="lazy" />
-                <?php if ($labels['type']): ?>
-                    <span class="bg-pcard__type"><?php echo esc_html($labels['type']); ?></span>
-                <?php endif; ?>
                 <span class="bg-pcard__stock <?php echo esc_attr($stock_class); ?>">
                     <span class="bg-pcard__stock-dot"></span>
                     <?php echo esc_html($stock_label); ?>

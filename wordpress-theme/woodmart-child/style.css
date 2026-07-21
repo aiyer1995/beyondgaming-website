@@ -2002,17 +2002,18 @@ body.home .elementor-location-single > *:first-child {
    the two grids behave the same.
 
    Anatomy:
-     .bg-pcard__bar       purple gradient bar, parent game category
+     .bg-pcard__bar       purple gradient bar
+       __game             parent game category, gold
+       __type             child product type, white
      .bg-pcard__media     square image well
        __backdrop         blurred zoom of the same image, so
                           inconsistent product photos sit on a
                           uniform canvas instead of white voids
-       __type             product type chip (child category)
        __stock            in/low stock pill
      .bg-pcard__body      title, meta, price + CTA
 
    .bg-product-card above is the older card and is still used by
-   [bg_related_products]; it is deliberately left untouched.
+   [bg_recently_viewed]; it is deliberately left untouched.
    ============================================================ */
 .bg-pcard {
   position: relative;
@@ -2051,7 +2052,23 @@ body.home .elementor-location-single > *:first-child {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   padding: 9px 14px;
+  /* Two labels on one line: the game reads gold and always fits,
+     the type reads white and gives up characters first. Every
+     current type name fits at 4-up; this is for narrower columns
+     and for whatever gets added to the taxonomy later. */
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   white-space: nowrap;
+  overflow: hidden;
+}
+.bg-pcard__game {
+  flex: 0 0 auto;
+}
+.bg-pcard__type {
+  min-width: 0;
+  color: #ffffff;
+  font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -2082,39 +2099,22 @@ body.home .elementor-location-single > *:first-child {
   object-fit: contain;
 }
 
-.bg-pcard__type,
 .bg-pcard__stock {
   position: absolute;
   z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  background: #ffffff;
-  border: 2px solid var(--bg-purple-900);
-  font-family: var(--bg-font-sans), -apple-system, sans-serif;
-  font-weight: 700;
-  pointer-events: none;
-}
-.bg-pcard__type {
-  top: 10px;
-  left: 10px;
-  max-width: calc(100% - 20px);
-  padding: 5px 10px;
-  border-radius: 8px;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--bg-purple-900);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.bg-pcard__stock {
   bottom: 10px;
   left: 10px;
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
   padding: 4px 10px;
   border-radius: 999px;
+  background: #ffffff;
+  border: 2px solid var(--bg-purple-900);
+  font-family: var(--bg-font-sans), -apple-system, sans-serif;
   font-size: 11px;
+  font-weight: 700;
+  pointer-events: none;
 }
 .bg-pcard__stock-dot {
   width: 7px;
