@@ -4,7 +4,7 @@ Theme URI: https://beyondgaming.in
 Description: Beyond Gaming brand customization layer on top of Woodmart. Brings the look-and-feel of the Next.js storefront to the WooCommerce theme: deep purple + gold palette, gradient text utilities, custom buttons, product card hover treatments, dark header, and supporting animations.
 Author: Beyond Gaming
 Template: woodmart
-Version: 4.0.1
+Version: 4.0.2
 Text Domain: beyondgaming
 */
 
@@ -1751,11 +1751,13 @@ body.home .elementor-location-single > *:first-child {
   max-width: 1280px;
   margin: 0 auto;
 }
-/* Centered flex layout: 3 cards per row on mobile/tablet, 5 on
-   desktop. Using flex + justify-content:center means an incomplete
-   last row (or a 5-card desktop row) stays centered instead of
-   being left-aligned with an empty trailing column. The 1px buffer
-   in flex-basis prevents sub-pixel rounding from wrapping a row. */
+/* Centered flex layout: 3 cards per row at every breakpoint, so the
+   six fandom cards read as a 3x2 block. Using flex +
+   justify-content:center means an incomplete last row stays centered
+   instead of being left-aligned with an empty trailing column. The
+   1px buffer in flex-basis prevents sub-pixel rounding from wrapping
+   a row. The desktop grid is capped narrower than the section so
+   three 1:1 cards don't balloon to ~410px squares. */
 .bg-fandom-grid {
   display: flex;
   flex-wrap: wrap;
@@ -1770,8 +1772,8 @@ body.home .elementor-location-single > *:first-child {
   .bg-fandom-grid > .bg-fandom-card { flex-basis: calc((100% - 2 * 16px) / 3 - 1px); }
 }
 @media (min-width: 1024px) {
-  .bg-fandom-grid { gap: 20px; }
-  .bg-fandom-grid > .bg-fandom-card { flex-basis: calc((100% - 4 * 20px) / 5 - 1px); }
+  .bg-fandom-grid { gap: 20px; max-width: 940px; margin: 0 auto; }
+  .bg-fandom-grid > .bg-fandom-card { flex-basis: calc((100% - 2 * 20px) / 3 - 1px); }
 }
 .bg-fandom-card {
   position: relative;
