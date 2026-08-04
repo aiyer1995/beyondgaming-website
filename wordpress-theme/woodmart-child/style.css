@@ -4,7 +4,7 @@ Theme URI: https://beyondgaming.in
 Description: Beyond Gaming brand customization layer on top of Woodmart. Brings the look-and-feel of the Next.js storefront to the WooCommerce theme: deep purple + gold palette, gradient text utilities, custom buttons, product card hover treatments, dark header, and supporting animations.
 Author: Beyond Gaming
 Template: woodmart
-Version: 4.0.2
+Version: 4.0.3
 Text Domain: beyondgaming
 */
 
@@ -1751,29 +1751,83 @@ body.home .elementor-location-single > *:first-child {
   max-width: 1280px;
   margin: 0 auto;
 }
-/* Centered flex layout: 3 cards per row at every breakpoint, so the
-   six fandom cards read as a 3x2 block. Using flex +
-   justify-content:center means an incomplete last row stays centered
-   instead of being left-aligned with an empty trailing column. The
-   1px buffer in flex-basis prevents sub-pixel rounding from wrapping
-   a row. The desktop grid is capped narrower than the section so
-   three 1:1 cards don't balloon to ~410px squares. */
-.bg-fandom-grid {
+/* Two layouts share one piece of markup.
+
+   Below 1024px it is a centered wrapping grid, 3 cards per row, so
+   six cards read as a 3x2 block. flex + justify-content:center keeps
+   an incomplete last row centered rather than left-aligned with an
+   empty trailing column, and the 1px buffer in flex-basis stops
+   sub-pixel rounding from wrapping a row early.
+
+   From 1024px up it becomes an infinite marquee. The track holds the
+   six cards twice; translating it -50% moves it by exactly one set,
+   at which point the clone sits where the original started and the
+   loop is seamless. The clone is display:none below 1024px so the
+   grid doesn't render twelve cards. */
+.bg-fandom-marquee {
+  overflow: visible;
+}
+.bg-fandom-set {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 10px;
 }
-.bg-fandom-grid > .bg-fandom-card {
+.bg-fandom-set > .bg-fandom-card {
   flex: 0 1 calc((100% - 2 * 10px) / 3 - 1px);
 }
+.bg-fandom-set--clone {
+  display: none;
+}
 @media (min-width: 768px) {
-  .bg-fandom-grid { gap: 16px; }
-  .bg-fandom-grid > .bg-fandom-card { flex-basis: calc((100% - 2 * 16px) / 3 - 1px); }
+  .bg-fandom-set { gap: 16px; }
+  .bg-fandom-set > .bg-fandom-card { flex-basis: calc((100% - 2 * 16px) / 3 - 1px); }
 }
 @media (min-width: 1024px) {
-  .bg-fandom-grid { gap: 20px; max-width: 940px; margin: 0 auto; }
-  .bg-fandom-grid > .bg-fandom-card { flex-basis: calc((100% - 2 * 20px) / 3 - 1px); }
+  /* Vertical padding gives a hover-scaled card room to grow; without
+     it the marquee's overflow:hidden would shave its top and bottom. */
+  .bg-fandom-marquee {
+    overflow: hidden;
+    padding: 30px 0;
+    /* Feathers both ends so cards dissolve into the section instead
+       of being sliced off at a hard edge. Purely cosmetic — drop the
+       two mask lines if you prefer the sharp cut. */
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 90px, #000 calc(100% - 90px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, #000 90px, #000 calc(100% - 90px), transparent 100%);
+  }
+  .bg-fandom-track {
+    display: flex;
+    width: max-content;
+    animation: bg-fandom-scroll 40s linear infinite;
+  }
+  .bg-fandom-set {
+    flex-wrap: nowrap;
+    gap: 20px;
+    padding-right: 20px;
+  }
+  .bg-fandom-set > .bg-fandom-card {
+    flex: 0 0 240px;
+  }
+  .bg-fandom-set--clone {
+    display: flex;
+  }
+  /* Hovering anywhere over the strip freezes it, so the card you are
+     reaching for stops moving. :focus-within does the same for
+     keyboard users tabbing through the cards. */
+  .bg-fandom-marquee:hover .bg-fandom-track,
+  .bg-fandom-marquee:focus-within .bg-fandom-track {
+    animation-play-state: paused;
+  }
+}
+@keyframes bg-fandom-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+/* Readers who ask for less motion get a static, manually scrollable
+   strip instead of a moving one. */
+@media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
+  .bg-fandom-track { animation: none; }
+  .bg-fandom-marquee { overflow-x: auto; }
 }
 .bg-fandom-card {
   position: relative;
@@ -1795,6 +1849,16 @@ body.home .elementor-location-single > *:first-child {
 .bg-fandom-card:hover {
   transform: translateY(-6px);
   box-shadow: 0 16px 36px rgba(53, 3, 97, 0.25);
+}
+/* On the desktop marquee the hovered card grows instead of lifting.
+   Declared after the base :hover above, which it has to outrank —
+   a media query adds no specificity, so source order decides. */
+@media (min-width: 1024px) {
+  .bg-fandom-card:hover,
+  .bg-fandom-card:focus-visible {
+    transform: scale(1.12);
+    z-index: 2;
+  }
 }
 .bg-fandom-card__bg {
   position: absolute;
@@ -1843,8 +1907,8 @@ body.home .elementor-location-single > *:first-child {
 }
 @media (max-width: 480px) {
   .bg-fandom-section { padding: 40px 12px; }
-  .bg-fandom-grid { gap: 8px; }
-  .bg-fandom-grid > .bg-fandom-card { flex-basis: calc((100% - 2 * 8px) / 3 - 1px); }
+  .bg-fandom-set { gap: 8px; }
+  .bg-fandom-set > .bg-fandom-card { flex-basis: calc((100% - 2 * 8px) / 3 - 1px); }
 }
 
 /* Per-card gradient tints (visible if no image) */
