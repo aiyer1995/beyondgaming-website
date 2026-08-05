@@ -4,7 +4,7 @@ Theme URI: https://beyondgaming.in
 Description: Beyond Gaming brand customization layer on top of Woodmart. Brings the look-and-feel of the Next.js storefront to the WooCommerce theme: deep purple + gold palette, gradient text utilities, custom buttons, product card hover treatments, dark header, and supporting animations.
 Author: Beyond Gaming
 Template: woodmart
-Version: 4.0.3
+Version: 4.0.4
 Text Domain: beyondgaming
 */
 
@@ -718,8 +718,11 @@ body [class*="whb"] .wd-search-form button[type="submit"]:hover {
 }
 
 /* Reserve space on the right of the input so text doesn't
-   slide under the absolutely-positioned button. */
-body [class*="whb"] .wd-search-form input[type="search"] {
+   slide under the absolutely-positioned button. Woodmart renders
+   the field as <input type="text" class="s">, so matching only
+   input[type="search"] here reserved nothing. */
+body [class*="whb"] .wd-search-form input[type="search"],
+body [class*="whb"] .wd-search-form input.s {
   padding-right: 56px !important;
 }
 body [class*="whb"] .wd-search-form button[type="submit"]:hover {
@@ -928,6 +931,81 @@ body [class*="whb"] .whb-header-bottom .menu-item.current-menu-ancestor > a,
 body [class*="whb"] .whb-header-bottom .menu-item.current-menu-ancestor > a * {
   color: var(--bg-purple-700) !important;
   font-weight: 600 !important;
+}
+
+/* ─── Mobile header search ───
+   The search element sits in the header-bottom row, which above is
+   painted white because on desktop that row is the nav strip. On
+   mobile the nav column is hidden and the row carries nothing but
+   the search, so a white band ends up wedged between the purple
+   header and the purple hero.
+
+   Recolouring the row to the header gradient closes that gap and,
+   more importantly, keeps the app-style pill valid: the pill is a
+   translucent white fill with white text, which only reads against
+   a dark surface. This section must stay AFTER the white-row rule
+   above — both carry !important, so source order decides.
+
+   The row colour is ALSO set inline by paintStickyHeader() in
+   bg-custom.js, which uses !important and therefore outranks
+   everything here. These rules only cover the moment before that
+   script runs; change the colour in both places or not at all.
+
+   To keep the row white instead, delete the .whb-header-bottom
+   block below, revert the mobile branch in paintStickyHeader, and
+   give the pill a light treatment: a #f3f3f3 fill and
+   var(--bg-ink) text/placeholder. */
+@media (max-width: 1023px) {
+  body [class*="whb"] .whb-header-bottom,
+  body [class*="whb"] .whb-row.whb-header-bottom,
+  body .whb-header .whb-row.whb-header-bottom,
+  body .whb-header > .whb-header-bottom {
+    background: linear-gradient(to right, #1a0030 0%, #350361 50%, #4a0e7a 100%) !important;
+    background-color: #350361 !important;
+    background-image: linear-gradient(to right, #1a0030 0%, #350361 50%, #4a0e7a 100%) !important;
+    border-top: 0 !important;
+    border-bottom: 0 !important;
+  }
+
+  /* The search is the only thing in the row, so let it span. */
+  body [class*="whb"] .whb-header-bottom .whb-col-mobile {
+    width: 100% !important;
+    flex: 1 1 100% !important;
+    justify-content: stretch !important;
+  }
+  body [class*="whb"] .whb-header-bottom .wd-search-form,
+  body [class*="whb"] .whb-header-bottom .wd-header-search-form-mobile {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Shorter pill than desktop's 52px so it clears the row.
+     Math: 44px pill - 36px button = 8px, so 4px above, below,
+     and to the right of the button. */
+  body [class*="whb"] .whb-header-bottom .wd-search-form > form,
+  body [class*="whb"] .whb-header-bottom .wd-search-form .searchform,
+  body [class*="whb"] .whb-header-bottom .wd-search-form form[role="search"] {
+    min-height: 44px !important;
+    height: 44px !important;
+    border-radius: 12px !important;
+    padding: 4px 4px 4px 18px !important;
+  }
+  body [class*="whb"] .whb-header-bottom .wd-search-form button[type="submit"] {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    max-width: 36px !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
+    border-radius: 9px !important;
+    right: 4px !important;
+  }
+  /* Keep typed text clear of the button. */
+  body [class*="whb"] .whb-header-bottom .wd-search-form input.s,
+  body [class*="whb"] .whb-header-bottom .wd-search-form input[type="text"],
+  body [class*="whb"] .whb-header-bottom .wd-search-form input[type="search"] {
+    padding-right: 48px !important;
+  }
 }
 
 /* ─── Dropdown submenus ───

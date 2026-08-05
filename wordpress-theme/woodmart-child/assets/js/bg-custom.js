@@ -232,18 +232,36 @@
             });
         });
 
-        // ─── Paint the .whb-header-bottom row WHITE explicitly ───
+        // ─── Paint the .whb-header-bottom row ───
         // This needs to use inline styles with !important to beat
         // any inline style left over from a previous paint pass.
+        //
+        // Desktop: white, because the row is the nav strip.
+        // Mobile: the nav column is hidden and the row carries only
+        // the search field, so white would leave a band stranded
+        // between the purple header and the purple hero. It takes
+        // the header gradient there instead.
+        //
+        // Note this runs at all, and with 'important', so it beats
+        // the matching stylesheet rules — the CSS alone cannot fix
+        // the mobile colour while this function paints over it.
+        var bgBottomMobile = window.matchMedia('(max-width: 1023px)').matches;
         document.querySelectorAll('.whb-header-bottom').forEach(function (row) {
-            row.style.setProperty('background', '#ffffff', 'important');
-            row.style.setProperty('background-color', '#ffffff', 'important');
-            row.style.setProperty('background-image', 'none', 'important');
-            row.style.setProperty(
-                'border-bottom',
-                '1px solid rgba(0,0,0,0.06)',
-                'important'
-            );
+            if (bgBottomMobile) {
+                row.style.setProperty('background', BG_HEADER_GRADIENT, 'important');
+                row.style.setProperty('background-color', '#350361', 'important');
+                row.style.setProperty('background-image', BG_HEADER_GRADIENT, 'important');
+                row.style.setProperty('border-bottom', '0', 'important');
+            } else {
+                row.style.setProperty('background', '#ffffff', 'important');
+                row.style.setProperty('background-color', '#ffffff', 'important');
+                row.style.setProperty('background-image', 'none', 'important');
+                row.style.setProperty(
+                    'border-bottom',
+                    '1px solid rgba(0,0,0,0.06)',
+                    'important'
+                );
+            }
             row.style.setProperty('border-top', '0', 'important');
             row.style.setProperty('box-shadow', 'none', 'important');
             // Inner row container transparent so the white shows through
@@ -259,6 +277,9 @@
     document.addEventListener('DOMContentLoaded', paintStickyHeader);
     window.addEventListener('load', paintStickyHeader);
     window.addEventListener('scroll', paintStickyHeader, { passive: true });
+    // Crossing the 1024px breakpoint (rotation, desktop resize) flips
+    // the header-bottom row between white and gradient, so repaint.
+    window.addEventListener('resize', paintStickyHeader, { passive: true });
 
     // Also watch for the sticky header being added to the DOM after
     // scroll (Woodmart sometimes injects it lazily)
