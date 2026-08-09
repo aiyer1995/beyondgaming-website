@@ -549,7 +549,14 @@ function bg_pcard_labels($product_id) {
 add_shortcode('bg_new_arrivals', function ($atts) {
     $atts = shortcode_atts([
         'limit'        => 8,
-        'exclude_cats' => 'grading',
+        // graded-slabs-singles is excluded by default because those
+        // products have their own homepage carousel above New
+        // Arrivals; listing them in both would duplicate the row.
+        // Keeping it here rather than in the page's shortcode call
+        // means the split survives anyone editing that widget.
+        'exclude_cats' => 'grading,graded-slabs-singles',
+        'include_cats' => '',
+        'layout'       => 'grid',
     ], $atts);
 
     if (!class_exists('WooCommerce')) {
@@ -582,15 +589,46 @@ add_shortcode('bg_new_arrivals', function ($atts) {
         ],
     ];
 
-    if (!empty($atts['exclude_cats'])) {
-        $args['tax_query'] = [
-            [
-                'taxonomy' => 'product_cat',
-                'field'    => 'slug',
-                'terms'    => array_map('trim', explode(',', $atts['exclude_cats'])),
-                'operator' => 'NOT IN',
-            ],
+    // product_cat is hierarchical and tax_query defaults to
+    // include_children, so both clauses cover subcategories too —
+    // excluding a parent excludes everything beneath it.
+    $split = function ($csv) {
+        return array_filter(array_map('trim', explode(',', (string) $csv)), 'strlen');
+    };
+    $include = $split($atts['include_cats']);
+    $exclude = $split($atts['exclude_cats']);
+
+    // Asking for a category explicitly beats the default exclusions,
+    // which name graded-slabs-singles. The two clauses are ANDed, so
+    // without this the carousel would ask for exactly the category it
+    // was also told to skip and always come back empty.
+    $exclude = array_diff($exclude, $include);
+
+    $tax_query = [];
+
+    if ($include) {
+        $tax_query[] = [
+            'taxonomy' => 'product_cat',
+            'field'    => 'slug',
+            'terms'    => array_values($include),
+            'operator' => 'IN',
         ];
+    }
+
+    if ($exclude) {
+        $tax_query[] = [
+            'taxonomy' => 'product_cat',
+            'field'    => 'slug',
+            'terms'    => array_values($exclude),
+            'operator' => 'NOT IN',
+        ];
+    }
+
+    if ($tax_query) {
+        if (count($tax_query) > 1) {
+            $tax_query['relation'] = 'AND';
+        }
+        $args['tax_query'] = $tax_query;
     }
 
     $query = new WP_Query($args);
@@ -598,10 +636,28 @@ add_shortcode('bg_new_arrivals', function ($atts) {
         return '';
     }
 
+    $is_carousel = ($atts['layout'] === 'carousel');
+
     ob_start();
-    ?>
-    <div class="bg-new-arrivals-grid">
-    <?php
+
+    if ($is_carousel) {
+        // The track scrolls natively — swipe on touch, arrows on
+        // desktop (wired up in bg-custom.js). The arrows are marked
+        // hidden until that script confirms the track overflows, so
+        // a short row doesn't show dead controls.
+        ?>
+        <div class="bg-carousel" data-bg-carousel>
+            <button type="button" class="bg-carousel__nav bg-carousel__nav--prev" aria-label="Previous products" hidden>
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <div class="bg-carousel__track">
+        <?php
+    } else {
+        ?>
+        <div class="bg-new-arrivals-grid">
+        <?php
+    }
+
     while ($query->have_posts()) {
         $query->the_post();
         global $product;
@@ -609,9 +665,21 @@ add_shortcode('bg_new_arrivals', function ($atts) {
         bg_render_pcard($product);
     }
     wp_reset_postdata();
-    ?>
-    </div>
-    <?php
+
+    if ($is_carousel) {
+        ?>
+            </div>
+            <button type="button" class="bg-carousel__nav bg-carousel__nav--next" aria-label="Next products" hidden>
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </button>
+        </div>
+        <?php
+    } else {
+        ?>
+        </div>
+        <?php
+    }
+
     return ob_get_clean();
 });
 

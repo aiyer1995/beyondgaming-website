@@ -861,4 +861,78 @@
         }
         window.addEventListener('load', placeRipLive);
     })();
+
+    // ─── Product carousel arrows ───
+    // Progressive enhancement over a natively scrolling track: the
+    // row already swipes without this, so the arrows only appear
+    // once we can confirm there is something to scroll to. That
+    // check has to re-run after images load, because until they do
+    // the track's scrollWidth is too small to overflow.
+    (function () {
+        function initCarousels() {
+            var roots = document.querySelectorAll('[data-bg-carousel]');
+            roots.forEach(function (root) {
+                var track = root.querySelector('.bg-carousel__track');
+                var prev = root.querySelector('.bg-carousel__nav--prev');
+                var next = root.querySelector('.bg-carousel__nav--next');
+                if (!track || !prev || !next) return;
+
+                function step() {
+                    // One trackful, less a sliver, so the card at the
+                    // seam stays partly visible as a scroll affordance.
+                    return Math.max(track.clientWidth - 48, 160);
+                }
+
+                // Both ends wrap rather than dead-ending, so neither
+                // arrow is ever a no-op: pressing back from the first
+                // card rewinds to the last, and forward from the end
+                // returns to the start.
+                function go(dir) {
+                    var behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                        ? 'auto'
+                        : 'smooth';
+                    var max = track.scrollWidth - track.clientWidth;
+                    // 2px of slack for sub-pixel scroll positions, which
+                    // rarely land exactly on 0 or on max.
+                    var atStart = track.scrollLeft <= 2;
+                    var atEnd = track.scrollLeft >= max - 2;
+
+                    if (dir < 0 && atStart) {
+                        track.scrollTo({ left: max, behavior: behavior });
+                    } else if (dir > 0 && atEnd) {
+                        track.scrollTo({ left: 0, behavior: behavior });
+                    } else {
+                        track.scrollBy({ left: dir * step(), behavior: behavior });
+                    }
+                }
+
+                function sync() {
+                    // 4px of slack absorbs sub-pixel layout rounding,
+                    // which would otherwise report a phantom overflow.
+                    var overflows = track.scrollWidth - track.clientWidth > 4;
+                    prev.hidden = !overflows;
+                    next.hidden = !overflows;
+                }
+
+                if (!root.getAttribute('data-bg-carousel-bound')) {
+                    prev.addEventListener('click', function () { go(-1); });
+                    next.addEventListener('click', function () { go(1); });
+                    window.addEventListener('resize', sync, { passive: true });
+                    track.querySelectorAll('img').forEach(function (img) {
+                        if (!img.complete) img.addEventListener('load', sync, { once: true });
+                    });
+                    root.setAttribute('data-bg-carousel-bound', '1');
+                }
+
+                sync();
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initCarousels);
+        } else {
+            initCarousels();
+        }
+        window.addEventListener('load', initCarousels);
+    })();
 })();

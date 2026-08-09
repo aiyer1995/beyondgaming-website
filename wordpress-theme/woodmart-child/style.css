@@ -4,7 +4,7 @@ Theme URI: https://beyondgaming.in
 Description: Beyond Gaming brand customization layer on top of Woodmart. Brings the look-and-feel of the Next.js storefront to the WooCommerce theme: deep purple + gold palette, gradient text utilities, custom buttons, product card hover treatments, dark header, and supporting animations.
 Author: Beyond Gaming
 Template: woodmart
-Version: 4.0.4
+Version: 4.0.5
 Text Domain: beyondgaming
 */
 
@@ -2079,6 +2079,89 @@ body.home .elementor-location-single > *:first-child {
 }
 @media (min-width: 1024px) {
   .bg-new-arrivals-grid { grid-template-columns: repeat(4, 1fr); gap: 24px; }
+}
+
+/* ─── 2b. PRODUCT CAROUSEL ───
+   Used by [bg_new_arrivals layout="carousel"]. Sits inside the same
+   .bg-new-arrivals-section shell as the grid, so the heading, the
+   background wash and the card styling all carry over — only the
+   row of cards behaves differently.
+
+   Scrolling is native: swipe on touch, arrows on desktop. Card
+   widths match the grid's rhythm (2 up on mobile, 3 on tablet,
+   4 on desktop) so the two sections read as siblings. */
+.bg-carousel {
+  position: relative;
+}
+.bg-carousel__track {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  /* Room for the cards' hover lift and shadow, which would
+     otherwise be clipped by the scroll container. */
+  padding: 4px 4px 12px;
+  margin: -4px -4px -12px;
+  /* Match the horizontal padding, so the first card's snap position
+     is scrollLeft 0. Without this the row rests 4px in and the
+     "are we at the start" test used for wrap-around never fires. */
+  scroll-padding-inline: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.bg-carousel__track::-webkit-scrollbar {
+  display: none;
+}
+.bg-carousel__track > .bg-pcard {
+  flex: 0 0 calc((100% - 16px) / 2);
+  scroll-snap-align: start;
+}
+@media (min-width: 640px) {
+  .bg-carousel__track > .bg-pcard { flex-basis: calc((100% - 2 * 16px) / 3); }
+}
+@media (min-width: 1024px) {
+  .bg-carousel__track { gap: 24px; }
+  .bg-carousel__track > .bg-pcard { flex-basis: calc((100% - 3 * 24px) / 4); }
+}
+
+/* Arrows overlay the track edges. Hidden on touch-sized screens,
+   where swiping is the expected gesture, and hidden by the [hidden]
+   attribute until the script confirms there is overflow to scroll. */
+.bg-carousel__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: #ffffff;
+  color: var(--bg-purple-700);
+  box-shadow: 0 6px 20px rgba(53, 3, 97, 0.18);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+.bg-carousel__nav:hover {
+  background: var(--bg-purple-700);
+  color: #ffffff;
+}
+/* Half the button clears the track, so it reads as a control beside
+   the row rather than a sticker on the first card. -22px is the most
+   that stays on screen at 1024px, where the section's 24px padding
+   is all the room there is. */
+.bg-carousel__nav--prev { left: -22px; }
+.bg-carousel__nav--next { right: -22px; }
+@media (min-width: 1024px) {
+  /* :not([hidden]) so the script still governs whether they appear. */
+  .bg-carousel__nav:not([hidden]) { display: inline-flex; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bg-carousel__track { scroll-behavior: auto; }
 }
 .bg-product-card {
   background: #ffffff;
