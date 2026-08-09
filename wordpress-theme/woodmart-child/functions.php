@@ -672,6 +672,9 @@ add_shortcode('bg_new_arrivals', function ($atts) {
             <button type="button" class="bg-carousel__nav bg-carousel__nav--next" aria-label="Next products" hidden>
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
             </button>
+            <?php // Dots are built by bg-custom.js, which is the only
+                  // thing that knows how many cards fit per page. ?>
+            <div class="bg-carousel__dots" role="tablist" aria-label="Carousel pages"></div>
         </div>
         <?php
     } else {

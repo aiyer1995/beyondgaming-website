@@ -4,7 +4,7 @@ Theme URI: https://beyondgaming.in
 Description: Beyond Gaming brand customization layer on top of Woodmart. Brings the look-and-feel of the Next.js storefront to the WooCommerce theme: deep purple + gold palette, gradient text utilities, custom buttons, product card hover treatments, dark header, and supporting animations.
 Author: Beyond Gaming
 Template: woodmart
-Version: 4.0.5
+Version: 4.0.6
 Text Domain: beyondgaming
 */
 
@@ -2127,28 +2127,43 @@ body.home .elementor-location-single > *:first-child {
 
 /* Arrows overlay the track edges. Hidden on touch-sized screens,
    where swiping is the expected gesture, and hidden by the [hidden]
-   attribute until the script confirms there is overflow to scroll. */
+   attribute until the script confirms there is overflow to scroll.
+
+   Every property Woodmart sets is forced here. Its base stylesheet
+   carries :is(.btn,.button,button,[type="submit"],[type="button"]),
+   which matches these buttons at the same (0,1,0) specificity as a
+   plain class — and it loads after this file, so it wins every tie.
+   Left alone it makes them grey squares in normal flow, and its
+   display:inline-flex even overrides the [hidden] attribute. */
 .bg-carousel__nav {
-  position: absolute;
+  position: absolute !important;
   top: 50%;
   transform: translateY(-50%);
   z-index: 3;
-  display: none;
+  display: none !important;
   align-items: center;
   justify-content: center;
   width: 44px;
   height: 44px;
-  border: 0;
-  border-radius: 50%;
-  background: #ffffff;
-  color: var(--bg-purple-700);
-  box-shadow: 0 6px 20px rgba(53, 3, 97, 0.18);
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: var(--bg-purple-700) !important;
+  box-shadow: 0 6px 20px rgba(53, 3, 97, 0.18) !important;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 .bg-carousel__nav:hover {
-  background: var(--bg-purple-700);
-  color: #ffffff;
+  background: var(--bg-purple-700) !important;
+  background-color: var(--bg-purple-700) !important;
+  color: #ffffff !important;
+}
+/* Woodmart's display would otherwise resurrect a hidden button. */
+.bg-carousel__nav[hidden] {
+  display: none !important;
 }
 /* Half the button clears the track, so it reads as a control beside
    the row rather than a sticker on the first card. -22px is the most
@@ -2158,10 +2173,49 @@ body.home .elementor-location-single > *:first-child {
 .bg-carousel__nav--next { right: -22px; }
 @media (min-width: 1024px) {
   /* :not([hidden]) so the script still governs whether they appear. */
-  .bg-carousel__nav:not([hidden]) { display: inline-flex; }
+  .bg-carousel__nav:not([hidden]) { display: inline-flex !important; }
+}
+
+/* Page dots. Built by the script, which is the only thing that knows
+   how many cards fit per page, so the container stays empty — and
+   therefore collapsed — whenever the row doesn't overflow. Unlike the
+   arrows these stay on mobile, where they double as the only cue that
+   the row scrolls at all. */
+.bg-carousel__dots {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+.bg-carousel__dots:not(:empty) {
+  display: flex;
+}
+.bg-carousel__dot {
+  width: 8px !important;
+  height: 8px !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: var(--bg-purple-200) !important;
+  background-color: var(--bg-purple-200) !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  transition: width 0.25s ease, background-color 0.25s ease;
+}
+.bg-carousel__dot:hover {
+  background-color: var(--bg-purple-400) !important;
+}
+/* The active page reads as a pill rather than a dot, so position is
+   legible at a glance without relying on colour alone. */
+.bg-carousel__dot.is-active {
+  width: 26px !important;
+  background-color: var(--bg-purple-700) !important;
 }
 @media (prefers-reduced-motion: reduce) {
   .bg-carousel__track { scroll-behavior: auto; }
+  .bg-carousel__dot { transition: none; }
 }
 .bg-product-card {
   background: #ffffff;

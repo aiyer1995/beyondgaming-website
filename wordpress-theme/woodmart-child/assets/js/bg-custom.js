@@ -875,6 +875,7 @@
                 var track = root.querySelector('.bg-carousel__track');
                 var prev = root.querySelector('.bg-carousel__nav--prev');
                 var next = root.querySelector('.bg-carousel__nav--next');
+                var dots = root.querySelector('.bg-carousel__dots');
                 if (!track || !prev || !next) return;
 
                 function step() {
@@ -906,17 +907,73 @@
                     }
                 }
 
+                function pageCount() {
+                    if (!track.clientWidth) return 1;
+                    return Math.max(1, Math.round(track.scrollWidth / track.clientWidth));
+                }
+
+                function currentPage() {
+                    if (!track.clientWidth) return 0;
+                    return Math.min(
+                        pageCount() - 1,
+                        Math.round(track.scrollLeft / track.clientWidth)
+                    );
+                }
+
+                function markActive() {
+                    if (!dots) return;
+                    var cur = currentPage();
+                    Array.prototype.forEach.call(dots.children, function (dot, i) {
+                        var on = (i === cur);
+                        dot.classList.toggle('is-active', on);
+                        dot.setAttribute('aria-selected', on ? 'true' : 'false');
+                        dot.setAttribute('tabindex', on ? '0' : '-1');
+                    });
+                }
+
+                function buildDots(overflows) {
+                    if (!dots) return;
+                    // Empty container collapses via :not(:empty), so a
+                    // row that fits shows no dots at all.
+                    var wanted = overflows ? pageCount() : 0;
+                    if (dots.children.length !== wanted) {
+                        dots.innerHTML = '';
+                        for (var i = 0; i < wanted; i++) {
+                            var dot = document.createElement('button');
+                            dot.type = 'button';
+                            dot.className = 'bg-carousel__dot';
+                            dot.setAttribute('role', 'tab');
+                            dot.setAttribute('aria-label', 'Page ' + (i + 1) + ' of ' + wanted);
+                            dot.addEventListener('click', (function (idx) {
+                                return function () {
+                                    var behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                                        ? 'auto'
+                                        : 'smooth';
+                                    track.scrollTo({
+                                        left: idx * track.clientWidth,
+                                        behavior: behavior
+                                    });
+                                };
+                            })(i));
+                            dots.appendChild(dot);
+                        }
+                    }
+                    markActive();
+                }
+
                 function sync() {
                     // 4px of slack absorbs sub-pixel layout rounding,
                     // which would otherwise report a phantom overflow.
                     var overflows = track.scrollWidth - track.clientWidth > 4;
                     prev.hidden = !overflows;
                     next.hidden = !overflows;
+                    buildDots(overflows);
                 }
 
                 if (!root.getAttribute('data-bg-carousel-bound')) {
                     prev.addEventListener('click', function () { go(-1); });
                     next.addEventListener('click', function () { go(1); });
+                    track.addEventListener('scroll', markActive, { passive: true });
                     window.addEventListener('resize', sync, { passive: true });
                     track.querySelectorAll('img').forEach(function (img) {
                         if (!img.complete) img.addEventListener('load', sync, { once: true });
