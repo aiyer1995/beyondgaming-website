@@ -432,8 +432,14 @@ function bg_pcard_labels($product_id) {
 
     // Umbrella categories that group other categories but never
     // describe a product on their own.
+    //
+    // featured-item belongs here for a second reason: it is
+    // top-level, so the game test below would otherwise accept it
+    // and a promoted Pokémon card would head its bar with
+    // "Featured / Special Sets". The badge on the image already
+    // says that, and the bar is the only place the game is named.
     $umbrella = ['tcg-products-all-languages', 'bandai-tcg', 'pre-orders',
-                 'sale', 'uncategorized'];
+                 'sale', 'uncategorized', 'featured-item'];
     $lang_parent_slug = 'tcg-products-all-languages';
 
     if ($all === null) {
