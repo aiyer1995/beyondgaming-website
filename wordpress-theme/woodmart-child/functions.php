@@ -557,6 +557,11 @@ add_shortcode('bg_new_arrivals', function ($atts) {
         'exclude_cats' => 'grading,graded-slabs-singles',
         'include_cats' => '',
         'layout'       => 'grid',
+        // Products in this category lead the grid, styled as
+        // featured. Set featured_count="0" to switch the promotion
+        // off without unpicking the category.
+        'featured_cat'   => 'featured-item',
+        'featured_count' => 4,
     ], $atts);
 
     if (!class_exists('WooCommerce')) {
@@ -624,6 +629,57 @@ add_shortcode('bg_new_arrivals', function ($atts) {
         ];
     }
 
+    // Featured products lead the grid. They are pulled in their own
+    // pass rather than sorted to the front, because "newest first"
+    // and "featured first" are different orders and a single query
+    // can only honour one of them.
+    //
+    // Skipped when the caller asked for specific categories — that
+    // is the carousel, which is already one curated row and has
+    // nothing to promote within it.
+    $featured_ids   = [];
+    $featured_cat   = trim((string) $atts['featured_cat']);
+    $featured_count = max(0, intval($atts['featured_count']));
+
+    if ($featured_count > 0 && $featured_cat !== '' && !$include) {
+        $featured_args = $args;
+        $featured_args['posts_per_page'] = $featured_count;
+
+        $featured_tax = [[
+            'taxonomy' => 'product_cat',
+            'field'    => 'slug',
+            'terms'    => [$featured_cat],
+            'operator' => 'IN',
+        ]];
+        if ($exclude) {
+            $featured_tax[] = [
+                'taxonomy' => 'product_cat',
+                'field'    => 'slug',
+                'terms'    => array_values($exclude),
+                'operator' => 'NOT IN',
+            ];
+            $featured_tax['relation'] = 'AND';
+        }
+        $featured_args['tax_query'] = $featured_tax;
+
+        $featured_ids = get_posts($featured_args + ['fields' => 'ids']);
+    }
+
+    // Whatever is left after the featured run fills the rest. The
+    // featured category is excluded wholesale, not just the ids
+    // already shown, so a promoted product never reappears further
+    // down the grid stripped of its styling.
+    $args['posts_per_page'] = max(0, intval($atts['limit']) - count($featured_ids));
+
+    if ($featured_ids) {
+        $tax_query[] = [
+            'taxonomy' => 'product_cat',
+            'field'    => 'slug',
+            'terms'    => [$featured_cat],
+            'operator' => 'NOT IN',
+        ];
+    }
+
     if ($tax_query) {
         if (count($tax_query) > 1) {
             $tax_query['relation'] = 'AND';
@@ -631,10 +687,14 @@ add_shortcode('bg_new_arrivals', function ($atts) {
         $args['tax_query'] = $tax_query;
     }
 
-    $query = new WP_Query($args);
-    if (!$query->have_posts()) {
+    $rest_ids = $args['posts_per_page'] > 0 ? get_posts($args + ['fields' => 'ids']) : [];
+    $ordered  = array_merge($featured_ids, $rest_ids);
+
+    if (!$ordered) {
         return '';
     }
+
+    $featured_lookup = array_flip($featured_ids);
 
     $is_carousel = ($atts['layout'] === 'carousel');
 
@@ -658,13 +718,15 @@ add_shortcode('bg_new_arrivals', function ($atts) {
         <?php
     }
 
-    while ($query->have_posts()) {
-        $query->the_post();
-        global $product;
-        if (!$product) continue;
-        bg_render_pcard($product);
+    foreach ($ordered as $pid) {
+        $card_product = wc_get_product($pid);
+        if (!$card_product) continue;
+        bg_render_pcard(
+            $card_product,
+            '(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw',
+            isset($featured_lookup[$pid])
+        );
     }
-    wp_reset_postdata();
 
     if ($is_carousel) {
         ?>
@@ -699,7 +761,7 @@ add_shortcode('bg_new_arrivals', function ($atts) {
  *                            Defaults to the 2/3/4-up grid that all
  *                            three callers lay out.
  */
-function bg_render_pcard($product, $sizes = '(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw') {
+function bg_render_pcard($product, $sizes = '(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw', $featured = false) {
     if (!$product instanceof WC_Product) {
         return;
     }
@@ -792,7 +854,7 @@ function bg_render_pcard($product, $sizes = '(min-width: 1024px) 25vw, (min-widt
         && $product->is_purchasable()
         && $product->is_in_stock();
     ?>
-    <article class="bg-pcard<?php echo $product->is_in_stock() ? '' : ' bg-pcard--out'; ?>">
+    <article class="bg-pcard<?php echo $product->is_in_stock() ? '' : ' bg-pcard--out'; ?><?php echo $featured ? ' bg-pcard--featured' : ''; ?>">
         <?php if ($labels['game']): ?>
             <div class="bg-pcard__bar">
                 <span class="bg-pcard__game"><?php echo esc_html($labels['game']); ?></span>
@@ -818,6 +880,12 @@ function bg_render_pcard($product, $sizes = '(min-width: 1024px) 25vw, (min-widt
             <?php else: ?>
                 <img class="bg-pcard__img" src="<?php echo esc_url($image); ?>"
                      alt="<?php echo esc_attr($title); ?>" loading="lazy" />
+            <?php endif; ?>
+            <?php if ($featured): ?>
+                <span class="bg-pcard__badge">
+                    <svg class="bg-pcard__badge-star" width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 6.26 6.6.72-4.9 4.62 1.32 6.4L12 16.9l-5.92 3.1 1.32-6.4L2.5 8.98l6.6-.72L12 2z"/></svg>
+                    Featured
+                </span>
             <?php endif; ?>
             <span class="bg-pcard__stock <?php echo esc_attr($stock_class); ?>">
                 <span class="bg-pcard__stock-dot"></span>

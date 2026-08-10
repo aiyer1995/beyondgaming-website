@@ -4,7 +4,7 @@ Theme URI: https://beyondgaming.in
 Description: Beyond Gaming brand customization layer on top of Woodmart. Brings the look-and-feel of the Next.js storefront to the WooCommerce theme: deep purple + gold palette, gradient text utilities, custom buttons, product card hover treatments, dark header, and supporting animations.
 Author: Beyond Gaming
 Template: woodmart
-Version: 4.0.6
+Version: 4.0.7
 Text Domain: beyondgaming
 */
 
@@ -2455,6 +2455,90 @@ body.home .elementor-location-single > *:first-child {
 /* A sold-out product should not compete with the ones that can
    actually be bought, so mute the image without hiding it. */
 .bg-pcard--out .bg-pcard__media { opacity: 0.62; }
+
+/* ─── Featured card ───
+   The brand's two colours trade places: the purple furniture goes
+   gold and the gold CTA goes purple, so a featured card is legible
+   as different from across the page without being a different
+   design.
+
+   Straight inversion isn't quite a swap, because the two colours
+   don't behave the same against white. Purple carries text at any
+   weight; gold at --bg-gold-400 on white is barely a contrast at
+   all. So anything that was purple TEXT lands on the deeper end of
+   the gold ramp (#b45309 / #d97706) rather than the literal
+   mirror, while purple used as a SURFACE maps straight across. */
+.bg-pcard--featured {
+  border-color: var(--bg-gold-500);
+}
+.bg-pcard--featured:hover {
+  box-shadow: 0 12px 28px rgba(245, 158, 11, 0.3);
+}
+.bg-pcard--featured .bg-pcard__bar {
+  background: linear-gradient(135deg, var(--bg-gold-500), var(--bg-gold-300));
+}
+.bg-pcard--featured .bg-pcard__game {
+  color: var(--bg-purple-900);
+}
+.bg-pcard--featured .bg-pcard__type {
+  color: var(--bg-purple-800);
+}
+.bg-pcard--featured .bg-pcard__media {
+  background: #fffbeb;
+  border-bottom-color: var(--bg-gold-500);
+}
+.bg-pcard--featured .bg-pcard__stock {
+  border-color: var(--bg-gold-500);
+}
+.bg-pcard--featured:hover .bg-pcard__link {
+  color: #b45309;
+}
+/* Deep amber rather than the mirrored gold — see the note above. */
+.bg-pcard--featured .bg-pcard__price,
+.bg-pcard--featured .bg-pcard__price ins {
+  background: linear-gradient(135deg, #b45309, #d97706, #f59e0b);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.bg-pcard--featured .bg-pcard__cta {
+  border-color: var(--bg-gold-500);
+  background: linear-gradient(135deg, var(--bg-purple-700), var(--bg-purple-900));
+  color: #ffffff;
+}
+.bg-pcard--featured .bg-pcard__cta:hover {
+  background: linear-gradient(135deg, var(--bg-purple-600), var(--bg-purple-700));
+  color: #ffffff;
+}
+
+/* The badge is the one element that stays gold on a gold card, so
+   it takes the deep purple border to hold its edge — against the
+   pale gold well, and against whatever colour the product photo
+   happens to be underneath it. */
+.bg-pcard__badge {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--bg-gold-300), var(--bg-gold-500));
+  border: 2px solid var(--bg-purple-900);
+  color: var(--bg-ink-deep);
+  font-family: var(--bg-font-sans), -apple-system, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 0 2px 8px rgba(53, 3, 97, 0.25);
+  pointer-events: none;
+}
+.bg-pcard__badge-star {
+  flex-shrink: 0;
+}
 
 .bg-pcard__body {
   display: flex;
