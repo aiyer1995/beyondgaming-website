@@ -3505,7 +3505,15 @@ function bg_rs_metabox($post) {
     <?php
 }
 
-add_action('save_post_product', function ($post_id) {
+// woocommerce_process_product_meta, not save_post_product. WordPress
+// fires save_post_{type} BEFORE save_post, and WooCommerce writes the
+// product type on save_post at priority 1 — so anything set from the
+// earlier hook is overwritten moments later by whatever the "Product
+// data" dropdown said. Forcing the type to variable from there looked
+// like it worked and silently reverted to simple on every save.
+// This hook runs inside WooCommerce's own save, and priority 20 puts
+// it after WC_Meta_Box_Product_Data::save() at 10.
+add_action('woocommerce_process_product_meta', function ($post_id) {
     if (!isset($_POST['bg_rs_nonce']) || !wp_verify_nonce($_POST['bg_rs_nonce'], 'bg_rs_save')) return;
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
     if (!current_user_can('edit_product', $post_id)) return;
@@ -3543,8 +3551,14 @@ function bg_rs_sync_variations($product_id, $boxes, $slots, $price, $reset = fal
 
     if (!$product->is_type('variable')) {
         wp_set_object_terms($product_id, 'variable', 'product_type');
+        // wc_get_product resolves the class from the cached product
+        // type, and WooCommerce has just saved this post as simple a
+        // few lines earlier in the same request. Without dropping the
+        // cache the re-read hands back another WC_Product_Simple and
+        // every variation below is attached to the wrong class.
+        clean_post_cache($product_id);
         $product = wc_get_product($product_id);
-        if (!$product) return;
+        if (!$product || !$product->is_type('variable')) return;
     }
 
     $labels = [];
@@ -3567,12 +3581,28 @@ function bg_rs_sync_variations($product_id, $boxes, $slots, $price, $reset = fal
     $product->set_attributes($attributes);
     $product->save();
 
+    // Query by parent rather than $product->get_children(), which
+    // reads the variable product's own children cache and returns
+    // nothing while the product is still typed simple. Any variation
+    // stranded by an earlier save would then be invisible here and
+    // get built a second time, leaving two Box 1s on the product.
+    $child_ids = get_posts([
+        'post_type'      => 'product_variation',
+        'post_parent'    => $product_id,
+        'post_status'    => 'any',
+        'numberposts'    => -1,
+        'fields'         => 'ids',
+        'orderby'        => 'ID',
+        'order'          => 'ASC',
+    ]);
+
     $existing = [];
-    foreach ($product->get_children() as $vid) {
+    foreach ($child_ids as $vid) {
         $variation = wc_get_product($vid);
         if (!$variation instanceof WC_Product_Variation) continue;
         $label = $variation->get_attribute(BG_RS_ATTR);
-        if ($label !== '') $existing[$label] = $variation;
+        if ($label === '' || isset($existing[$label])) continue;
+        $existing[$label] = $variation;
     }
 
     foreach ($labels as $label) {
@@ -3583,6 +3613,11 @@ function bg_rs_sync_variations($product_id, $boxes, $slots, $price, $reset = fal
             $variation->set_parent_id($product_id);
             $variation->set_attributes([BG_RS_ATTR => $label]);
         }
+
+        // Brings back a box that a previous, smaller box count had
+        // unpublished — and publishes any variation stranded by the
+        // save-order bug above.
+        $variation->set_status('publish');
 
         if ($price !== '') {
             $variation->set_regular_price($price);
