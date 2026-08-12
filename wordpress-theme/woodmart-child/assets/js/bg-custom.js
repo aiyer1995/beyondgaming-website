@@ -992,4 +992,79 @@
         }
         window.addEventListener('load', initCarousels);
     })();
+
+    // ─── Rip & Ship slot picker ───
+    // Steppers and a running total over a plain form. The form posts
+    // and works without any of this; the script only saves the buyer
+    // from adding up slots in their head before they commit.
+    (function () {
+        function initPickers() {
+            document.querySelectorAll('[data-bg-rs]').forEach(function (form) {
+                if (form.getAttribute('data-bg-rs-bound')) return;
+                form.setAttribute('data-bg-rs-bound', '1');
+
+                var price = parseFloat(form.getAttribute('data-slot-price')) || 0;
+                var symbol = form.getAttribute('data-currency') || '';
+                var countEl = form.querySelector('[data-bg-rs-count]');
+                var totalEl = form.querySelector('[data-bg-rs-total]');
+                var submit = form.querySelector('[data-bg-rs-submit]');
+
+                function inputs() {
+                    return Array.prototype.slice.call(form.querySelectorAll('.bg-rs__input'));
+                }
+
+                function clamp(input) {
+                    var max = parseInt(input.getAttribute('max'), 10);
+                    var val = parseInt(input.value, 10);
+                    if (isNaN(val) || val < 0) val = 0;
+                    if (!isNaN(max) && val > max) val = max;
+                    input.value = val;
+                    return val;
+                }
+
+                function refresh() {
+                    var slots = inputs().reduce(function (sum, i) { return sum + clamp(i); }, 0);
+
+                    if (countEl) {
+                        countEl.textContent = slots
+                            ? slots + (slots === 1 ? ' slot selected' : ' slots selected')
+                            : 'No slots selected';
+                    }
+                    if (totalEl) {
+                        totalEl.textContent = (slots && price)
+                            ? symbol + (slots * price).toLocaleString('en-IN', {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2
+                              })
+                            : '';
+                    }
+                    if (submit) submit.disabled = slots < 1;
+                }
+
+                form.addEventListener('click', function (e) {
+                    var step = e.target.closest ? e.target.closest('[data-bg-rs-step]') : null;
+                    if (!step) return;
+                    e.preventDefault();
+                    var box = step.closest('.bg-rs__box');
+                    var input = box && box.querySelector('.bg-rs__input');
+                    if (!input) return;
+                    input.value = (parseInt(input.value, 10) || 0) + parseInt(step.getAttribute('data-bg-rs-step'), 10);
+                    refresh();
+                });
+
+                form.addEventListener('input', function (e) {
+                    if (e.target.classList.contains('bg-rs__input')) refresh();
+                });
+
+                refresh();
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initPickers);
+        } else {
+            initPickers();
+        }
+        window.addEventListener('load', initPickers);
+    })();
 })();

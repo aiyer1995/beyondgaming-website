@@ -4,7 +4,7 @@ Theme URI: https://beyondgaming.in
 Description: Beyond Gaming brand customization layer on top of Woodmart. Brings the look-and-feel of the Next.js storefront to the WooCommerce theme: deep purple + gold palette, gradient text utilities, custom buttons, product card hover treatments, dark header, and supporting animations.
 Author: Beyond Gaming
 Template: woodmart
-Version: 4.0.8
+Version: 4.1.0
 Text Domain: beyondgaming
 */
 
@@ -11394,4 +11394,214 @@ body.bg-mobile-menu-open {
     color: #ffffff;
     box-sizing: border-box;
   }
+}
+
+/* ============================================================
+   RIP & SHIP — slot picker
+   Sits in the product page's buy column, so it borrows that
+   column's width rather than setting its own. Boxes wrap into
+   as many columns as fit; a break can be 2 boxes or 20.
+   ============================================================ */
+.bg-rs {
+  margin: 4px 0 8px;
+}
+.bg-rs__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.bg-rs__title {
+  font-family: var(--bg-font-sans), -apple-system, sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--bg-ink-deep);
+}
+.bg-rs__left-all {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bg-purple-700);
+}
+.bg-rs__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+.bg-rs__box {
+  border: 2px solid var(--bg-purple-900);
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 10px 12px 12px;
+}
+.bg-rs__box--full {
+  border-color: #e5e7eb;
+  background: #fafafa;
+}
+.bg-rs__box-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.bg-rs__box-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--bg-ink-deep);
+}
+.bg-rs__box-left {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  white-space: nowrap;
+}
+.bg-rs__box-left strong {
+  color: var(--bg-purple-700);
+  font-weight: 800;
+}
+.bg-rs__box--full .bg-rs__box-name,
+.bg-rs__box--full .bg-rs__box-left {
+  color: #9ca3af;
+}
+
+/* How full the box is. Reads as progress toward a full box, so it
+   fills up as slots sell rather than draining. */
+.bg-rs__meter {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--bg-purple-100);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.bg-rs__meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--bg-purple-600), var(--bg-purple-400));
+}
+.bg-rs__box--full .bg-rs__meter { background: #e5e7eb; }
+.bg-rs__box--full .bg-rs__meter-fill { background: #d1d5db; }
+
+.bg-rs__qty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.bg-rs__step {
+  width: 30px !important;
+  height: 30px !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  flex: 0 0 30px;
+  border: 2px solid var(--bg-purple-900) !important;
+  border-radius: 9px !important;
+  background: #ffffff !important;
+  color: var(--bg-purple-900) !important;
+  font-size: 15px !important;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.bg-rs__step:hover {
+  background: var(--bg-purple-900) !important;
+  color: #ffffff !important;
+}
+.bg-rs__input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  padding: 0 4px !important;
+  text-align: center;
+  border: 2px solid var(--bg-purple-900) !important;
+  border-radius: 9px !important;
+  background: #ffffff !important;
+  color: var(--bg-ink-deep) !important;
+  font-family: var(--bg-font-sans), -apple-system, sans-serif;
+  font-size: 14px !important;
+  font-weight: 800;
+}
+/* The steppers are the intended control; the spinners crowd a
+   30px field and land under the buyer's thumb on mobile. */
+.bg-rs__input::-webkit-outer-spin-button,
+.bg-rs__input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.bg-rs__input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.bg-rs__sold {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: #f3f4f6;
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.bg-rs__foot {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.bg-rs__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.bg-rs__count {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+}
+.bg-rs__total {
+  font-family: var(--bg-font-sans), -apple-system, sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  background: linear-gradient(135deg, #9215ad, #6b11a1, #a855f7);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.bg-rs__submit {
+  flex: 1 1 200px;
+  min-height: 48px !important;
+  padding: 12px 24px !important;
+  border: 2px solid var(--bg-purple-900) !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, var(--bg-gold-400), var(--bg-gold-500)) !important;
+  color: var(--bg-ink-deep) !important;
+  font-family: var(--bg-font-sans), -apple-system, sans-serif;
+  font-size: 14px !important;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.bg-rs__submit:hover:not([disabled]) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(53, 3, 97, 0.25);
+}
+.bg-rs__submit[disabled] {
+  opacity: 0.45;
+  cursor: default;
+  transform: none;
 }

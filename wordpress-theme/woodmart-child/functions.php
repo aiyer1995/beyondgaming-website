@@ -2103,6 +2103,8 @@ function bg_render_product_page() {
                             class="single_add_to_cart_button bg-product-page__cart-btn button alt"
                         >Add to Cart</button>
                     </form>
+                <?php elseif (bg_rs_is_break($product)): ?>
+                    <?php bg_rs_render_picker($product); ?>
                 <?php elseif ($product->is_in_stock()): ?>
                     <a href="<?php echo esc_url($product->get_permalink()); ?>" class="bg-product-page__cart-btn bg-product-page__cart-btn--link">
                         Configure on Product Page
@@ -3365,3 +3367,380 @@ add_action('template_redirect', function () {
     <?php
     exit;
 }, 0);
+
+/* ============================================================
+   RIP & SHIP — box breaks sold by the slot
+
+   A break is one product with several identical boxes, each
+   holding a fixed number of slots. A buyer takes as many slots
+   as they like from whichever boxes they like: 5 from Box 1,
+   8 from Box 2.
+
+   Each box is a variation of a variable product and each slot
+   is one unit of that variation's stock. That is the whole
+   trick, and it is worth stating plainly because a custom
+   product type is the obvious-looking alternative: overselling
+   is the only real risk in a break, and WooCommerce already
+   holds stock through checkout, revalidates the cart when
+   stock moves under it, and puts a slot back on refund. Those
+   are exactly the paths where an oversell reaches a customer,
+   and none of them have to be rewritten here.
+
+   What is custom is only the buying UI, because Woo's stock
+   form sells one variation at a time and a break needs several
+   in one go.
+   ============================================================ */
+
+const BG_RS_ENABLED   = '_bg_rs_enabled';
+const BG_RS_BOXES     = '_bg_rs_boxes';
+const BG_RS_SLOTS     = '_bg_rs_slots_per_box';
+const BG_RS_PRICE     = '_bg_rs_slot_price';
+const BG_RS_ATTR      = 'box';
+const BG_RS_ATTR_NAME = 'Box';
+
+/**
+ * Boxes for a break, as [variation_id => [label, left, total, price]].
+ * Ordered by box number rather than variation id, so inserting a
+ * box later still lists in the order a buyer expects.
+ */
+function bg_rs_boxes($product) {
+    if (!$product instanceof WC_Product_Variable) {
+        return [];
+    }
+
+    $total_slots = (int) get_post_meta($product->get_id(), BG_RS_SLOTS, true);
+    $boxes = [];
+
+    foreach ($product->get_children() as $vid) {
+        $variation = wc_get_product($vid);
+        if (!$variation instanceof WC_Product_Variation) continue;
+
+        $label = $variation->get_attribute(BG_RS_ATTR);
+        if ($label === '') continue;
+
+        // Unmanaged stock would make "slots left" meaningless, so
+        // such a box is treated as unavailable rather than infinite.
+        $left = $variation->managing_stock() ? (int) $variation->get_stock_quantity() : 0;
+
+        $boxes[$vid] = [
+            'label' => $label,
+            'left'  => max(0, $left),
+            'total' => $total_slots > 0 ? $total_slots : max(0, $left),
+            'price' => (float) $variation->get_price(),
+            'num'   => (int) preg_replace('/\D+/', '', $label),
+        ];
+    }
+
+    uasort($boxes, function ($a, $b) { return $a['num'] <=> $b['num']; });
+
+    return $boxes;
+}
+
+function bg_rs_is_break($product) {
+    if (!$product instanceof WC_Product) return false;
+    return get_post_meta($product->get_id(), BG_RS_ENABLED, true) === 'yes'
+        && $product->is_type('variable');
+}
+
+/* ─── Admin: define the break ─── */
+
+add_action('add_meta_boxes', function () {
+    add_meta_box(
+        'bg-rs-box',
+        'Rip &amp; Ship — Box Break',
+        'bg_rs_metabox',
+        'product',
+        'normal',
+        'high'
+    );
+});
+
+function bg_rs_metabox($post) {
+    wp_nonce_field('bg_rs_save', 'bg_rs_nonce');
+    $enabled = get_post_meta($post->ID, BG_RS_ENABLED, true) === 'yes';
+    $boxes   = (int) get_post_meta($post->ID, BG_RS_BOXES, true);
+    $slots   = (int) get_post_meta($post->ID, BG_RS_SLOTS, true);
+    $price   = get_post_meta($post->ID, BG_RS_PRICE, true);
+    ?>
+    <style>
+        .bg-rs-admin label { display:block; margin:10px 0 4px; font-weight:600; }
+        .bg-rs-admin input[type=number], .bg-rs-admin input[type=text] { width:140px; }
+        .bg-rs-admin .bg-rs-admin__note { color:#666; font-style:italic; margin-top:12px; }
+        .bg-rs-admin .bg-rs-admin__warn { color:#996800; }
+    </style>
+    <div class="bg-rs-admin">
+        <p>
+            <label for="bg_rs_enabled">
+                <input type="checkbox" id="bg_rs_enabled" name="bg_rs_enabled" value="yes" <?php checked($enabled); ?> />
+                Sell this product as a box break
+            </label>
+        </p>
+
+        <label for="bg_rs_boxes">Number of boxes</label>
+        <input type="number" min="0" step="1" id="bg_rs_boxes" name="bg_rs_boxes" value="<?php echo esc_attr($boxes); ?>" />
+
+        <label for="bg_rs_slots">Slots per box</label>
+        <input type="number" min="1" step="1" id="bg_rs_slots" name="bg_rs_slots" value="<?php echo esc_attr($slots ?: 30); ?>" />
+
+        <label for="bg_rs_price">Price per slot</label>
+        <input type="text" id="bg_rs_price" name="bg_rs_price" value="<?php echo esc_attr($price); ?>" placeholder="e.g. 499" />
+
+        <p class="bg-rs-admin__note">
+            Saving builds one variation per box, each holding the slots
+            above as its stock. Raising the box count adds boxes and
+            leaves the existing ones alone.
+        </p>
+
+        <p>
+            <label for="bg_rs_reset">
+                <input type="checkbox" id="bg_rs_reset" name="bg_rs_reset" value="yes" />
+                <span class="bg-rs-admin__warn">
+                    Refill every box back to full on save. Only tick this
+                    for an event that has not started — it puts sold slots
+                    back on sale.
+                </span>
+            </label>
+        </p>
+    </div>
+    <?php
+}
+
+add_action('save_post_product', function ($post_id) {
+    if (!isset($_POST['bg_rs_nonce']) || !wp_verify_nonce($_POST['bg_rs_nonce'], 'bg_rs_save')) return;
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+    if (!current_user_can('edit_product', $post_id)) return;
+
+    $enabled = isset($_POST['bg_rs_enabled']) ? 'yes' : 'no';
+    update_post_meta($post_id, BG_RS_ENABLED, $enabled);
+
+    if ($enabled !== 'yes') return;
+
+    $boxes = max(0, (int) ($_POST['bg_rs_boxes'] ?? 0));
+    $slots = max(1, (int) ($_POST['bg_rs_slots'] ?? 30));
+    $price = wc_format_decimal($_POST['bg_rs_price'] ?? '');
+    $reset = isset($_POST['bg_rs_reset']);
+
+    update_post_meta($post_id, BG_RS_BOXES, $boxes);
+    update_post_meta($post_id, BG_RS_SLOTS, $slots);
+    update_post_meta($post_id, BG_RS_PRICE, $price);
+
+    if ($boxes > 0) {
+        bg_rs_sync_variations($post_id, $boxes, $slots, $price, $reset);
+    }
+}, 20);
+
+/**
+ * Builds the Box attribute and one variation per box.
+ *
+ * Stock is only written for boxes being created, or when the caller
+ * explicitly asks for a refill. Rewriting it on every save would put
+ * already-sold slots back on the shelf every time anyone touched the
+ * product — including edits that have nothing to do with the break.
+ */
+function bg_rs_sync_variations($product_id, $boxes, $slots, $price, $reset = false) {
+    $product = wc_get_product($product_id);
+    if (!$product) return;
+
+    if (!$product->is_type('variable')) {
+        wp_set_object_terms($product_id, 'variable', 'product_type');
+        $product = wc_get_product($product_id);
+        if (!$product) return;
+    }
+
+    $labels = [];
+    for ($i = 1; $i <= $boxes; $i++) {
+        $labels[] = 'Box ' . $i;
+    }
+
+    // A local attribute rather than a global one: these values mean
+    // nothing outside this product, and registering Box 1..30 as
+    // site-wide terms would clutter every other product's attribute UI.
+    $attribute = new WC_Product_Attribute();
+    $attribute->set_name(BG_RS_ATTR_NAME);
+    $attribute->set_options($labels);
+    $attribute->set_position(0);
+    $attribute->set_visible(true);
+    $attribute->set_variation(true);
+
+    $attributes = $product->get_attributes();
+    $attributes[BG_RS_ATTR] = $attribute;
+    $product->set_attributes($attributes);
+    $product->save();
+
+    $existing = [];
+    foreach ($product->get_children() as $vid) {
+        $variation = wc_get_product($vid);
+        if (!$variation instanceof WC_Product_Variation) continue;
+        $label = $variation->get_attribute(BG_RS_ATTR);
+        if ($label !== '') $existing[$label] = $variation;
+    }
+
+    foreach ($labels as $label) {
+        $is_new = !isset($existing[$label]);
+        $variation = $is_new ? new WC_Product_Variation() : $existing[$label];
+
+        if ($is_new) {
+            $variation->set_parent_id($product_id);
+            $variation->set_attributes([BG_RS_ATTR => $label]);
+        }
+
+        if ($price !== '') {
+            $variation->set_regular_price($price);
+        }
+
+        $variation->set_manage_stock(true);
+        if ($is_new || $reset) {
+            $variation->set_stock_quantity($slots);
+        }
+        // A box with no slots left is sold out, not hidden — buyers
+        // should still see that it filled up.
+        $variation->set_stock_status((int) $variation->get_stock_quantity() > 0 ? 'instock' : 'outofstock');
+        $variation->save();
+    }
+
+    // Boxes removed from the count are unpublished rather than
+    // deleted, so any order that already points at one keeps
+    // resolving to a real variation.
+    foreach ($existing as $label => $variation) {
+        if (!in_array($label, $labels, true)) {
+            $variation->set_status('private');
+            $variation->save();
+        }
+    }
+
+    WC_Product_Variable::sync($product_id);
+    wc_delete_product_transients($product_id);
+}
+
+/* ─── Front end: the slot picker ─── */
+
+/**
+ * Renders the box grid. Echoes, to match bg_render_pcard.
+ */
+function bg_rs_render_picker($product) {
+    $boxes = bg_rs_boxes($product);
+    if (!$boxes) return;
+
+    $slot_price = 0.0;
+    foreach ($boxes as $b) {
+        if ($b['price'] > 0) { $slot_price = $b['price']; break; }
+    }
+    $total_left = array_sum(wp_list_pluck($boxes, 'left'));
+    ?>
+    <form class="bg-rs" method="post" data-bg-rs
+          data-slot-price="<?php echo esc_attr($slot_price); ?>"
+          data-currency="<?php echo esc_attr(get_woocommerce_currency_symbol()); ?>">
+        <?php wp_nonce_field('bg_rs_add', 'bg_rs_add_nonce'); ?>
+        <input type="hidden" name="bg_rs_product" value="<?php echo esc_attr($product->get_id()); ?>" />
+
+        <div class="bg-rs__head">
+            <span class="bg-rs__title">Pick your slots</span>
+            <span class="bg-rs__left-all"><?php echo (int) $total_left; ?> slots left across <?php echo count($boxes); ?> boxes</span>
+        </div>
+
+        <div class="bg-rs__grid">
+            <?php foreach ($boxes as $vid => $box):
+                $full = $box['left'] < 1;
+                $taken = max(0, $box['total'] - $box['left']);
+                $pct = $box['total'] > 0 ? round($taken / $box['total'] * 100) : 100;
+                ?>
+                <div class="bg-rs__box<?php echo $full ? ' bg-rs__box--full' : ''; ?>">
+                    <div class="bg-rs__box-head">
+                        <span class="bg-rs__box-name"><?php echo esc_html($box['label']); ?></span>
+                        <span class="bg-rs__box-left">
+                            <?php if ($full): ?>
+                                Sold out
+                            <?php else: ?>
+                                <strong><?php echo (int) $box['left']; ?></strong> of <?php echo (int) $box['total']; ?> left
+                            <?php endif; ?>
+                        </span>
+                    </div>
+
+                    <div class="bg-rs__meter" aria-hidden="true">
+                        <span class="bg-rs__meter-fill" style="width:<?php echo (int) $pct; ?>%"></span>
+                    </div>
+
+                    <?php if ($full): ?>
+                        <div class="bg-rs__sold">Filled</div>
+                    <?php else: ?>
+                        <div class="bg-rs__qty">
+                            <button type="button" class="bg-rs__step" data-bg-rs-step="-1" aria-label="One fewer slot from <?php echo esc_attr($box['label']); ?>">&minus;</button>
+                            <input
+                                type="number"
+                                class="bg-rs__input"
+                                name="bg_rs_qty[<?php echo esc_attr($vid); ?>]"
+                                value="0"
+                                min="0"
+                                max="<?php echo (int) $box['left']; ?>"
+                                step="1"
+                                inputmode="numeric"
+                                aria-label="Slots from <?php echo esc_attr($box['label']); ?>"
+                            />
+                            <button type="button" class="bg-rs__step" data-bg-rs-step="1" aria-label="One more slot from <?php echo esc_attr($box['label']); ?>">+</button>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+
+        <div class="bg-rs__foot">
+            <div class="bg-rs__summary">
+                <span class="bg-rs__count" data-bg-rs-count>No slots selected</span>
+                <span class="bg-rs__total" data-bg-rs-total></span>
+            </div>
+            <button type="submit" class="bg-rs__submit" data-bg-rs-submit disabled>Add slots to cart</button>
+        </div>
+    </form>
+    <?php
+}
+
+/**
+ * Handles the multi-box add. Runs before the page renders so a
+ * successful add can redirect straight to the cart.
+ */
+add_action('template_redirect', function () {
+    if (empty($_POST['bg_rs_add_nonce'])) return;
+    if (!wp_verify_nonce($_POST['bg_rs_add_nonce'], 'bg_rs_add')) return;
+    if (!function_exists('WC') || !WC()->cart) return;
+
+    $product_id = absint($_POST['bg_rs_product'] ?? 0);
+    $product = $product_id ? wc_get_product($product_id) : null;
+    if (!$product || !bg_rs_is_break($product)) return;
+
+    $wanted = (array) ($_POST['bg_rs_qty'] ?? []);
+    $boxes = bg_rs_boxes($product);
+    $added = 0;
+
+    foreach ($wanted as $vid => $qty) {
+        $vid = absint($vid);
+        $qty = absint($qty);
+        if (!$qty || !isset($boxes[$vid])) continue;
+
+        $variation = wc_get_product($vid);
+        if (!$variation instanceof WC_Product_Variation) continue;
+        // Belt and braces: add_to_cart validates stock too, but
+        // checking here keeps the notice specific to the box.
+        if ($qty > $boxes[$vid]['left']) {
+            wc_add_notice(sprintf(
+                'Only %d slot(s) left in %s.',
+                $boxes[$vid]['left'],
+                $boxes[$vid]['label']
+            ), 'error');
+            continue;
+        }
+
+        $ok = WC()->cart->add_to_cart(
+            $product_id,
+            $qty,
+            $vid,
+            ['attribute_' . BG_RS_ATTR => $boxes[$vid]['label']]
+        );
+        if ($ok) $added += $qty;
+    }
+
+    if ($added > 0) {
+        wc_add_notice(sprintf('%d slot(s) added to your cart.', $added), 'success');
+        wp_safe_redirect(wc_get_cart_url());
+        exit;
+    }
+});
