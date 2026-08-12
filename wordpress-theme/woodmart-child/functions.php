@@ -3505,14 +3505,51 @@ function bg_rs_metabox($post) {
     <?php
 }
 
-// woocommerce_process_product_meta, not save_post_product. WordPress
-// fires save_post_{type} BEFORE save_post, and WooCommerce writes the
-// product type on save_post at priority 1 — so anything set from the
-// earlier hook is overwritten moments later by whatever the "Product
-// data" dropdown said. Forcing the type to variable from there looked
-// like it worked and silently reverted to simple on every save.
-// This hook runs inside WooCommerce's own save, and priority 20 puts
-// it after WC_Meta_Box_Product_Data::save() at 10.
+/** Queues a message shown once, after the redirect back to the editor. */
+function bg_rs_notice($message, $type = 'success') {
+    set_transient('bg_rs_notice_' . get_current_user_id(), [
+        'message' => $message,
+        'type'    => $type,
+    ], 120);
+}
+
+add_action('admin_notices', function () {
+    $key = 'bg_rs_notice_' . get_current_user_id();
+    $notice = get_transient($key);
+    if (!$notice) return;
+    delete_transient($key);
+    printf(
+        '<div class="notice notice-%s is-dismissible"><p><strong>Rip &amp; Ship:</strong> %s</p></div>',
+        esc_attr($notice['type']),
+        esc_html($notice['message'])
+    );
+});
+
+/** True when this request is saving a break with at least one box. */
+function bg_rs_posted_break() {
+    if (!isset($_POST['bg_rs_nonce']) || !wp_verify_nonce($_POST['bg_rs_nonce'], 'bg_rs_save')) return false;
+    if (!isset($_POST['bg_rs_enabled'])) return false;
+    return (int) ($_POST['bg_rs_boxes'] ?? 0) > 0;
+}
+
+// Steer WooCommerce's save rather than correct it afterwards.
+//
+// The type has to be variable before WC_Meta_Box_Product_Data::save()
+// runs at priority 10, because that method does far more than write a
+// term: it decides which class to load and which fields to persist.
+// Flipping the term afterwards left WooCommerce having already saved
+// the product as simple, and re-reading it in the same request handed
+// back a cached WC_Product_Simple — so the variations were built
+// against the wrong class and never showed up.
+//
+// Overwriting the posted value instead means WooCommerce builds a
+// variable product through its own path, and the sync below only has
+// to add boxes to a product that is already the right type.
+add_action('woocommerce_process_product_meta', function () {
+    if (!bg_rs_posted_break()) return;
+    $_POST['product-type'] = 'variable';
+}, 1);
+
 add_action('woocommerce_process_product_meta', function ($post_id) {
     if (!isset($_POST['bg_rs_nonce']) || !wp_verify_nonce($_POST['bg_rs_nonce'], 'bg_rs_save')) return;
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
@@ -3534,6 +3571,25 @@ add_action('woocommerce_process_product_meta', function ($post_id) {
 
     if ($boxes > 0) {
         bg_rs_sync_variations($post_id, $boxes, $slots, $price, $reset);
+
+        // Report what happened. A break that silently fails to build
+        // looks identical in the editor to one that worked, and the
+        // only symptom is the wrong thing rendering on the front end.
+        $product = wc_get_product($post_id);
+        if ($product && $product->is_type('variable')) {
+            $built = count(bg_rs_boxes($product));
+            bg_rs_notice(sprintf(
+                '%d box(es) of %d slots are live on this product.',
+                $built,
+                $slots
+            ));
+        } else {
+            bg_rs_notice(
+                'Could not turn this into a variable product, so no boxes were built. '
+                . 'Check whether another plugin is forcing the product type.',
+                'error'
+            );
+        }
     }
 }, 20);
 
@@ -3558,7 +3614,11 @@ function bg_rs_sync_variations($product_id, $boxes, $slots, $price, $reset = fal
         // every variation below is attached to the wrong class.
         clean_post_cache($product_id);
         $product = wc_get_product($product_id);
-        if (!$product || !$product->is_type('variable')) return;
+        if (!$product || !$product->is_type('variable')) {
+            // The caller reports this; bailing here without a word is
+            // what made the original failure so hard to see.
+            return;
+        }
     }
 
     $labels = [];
